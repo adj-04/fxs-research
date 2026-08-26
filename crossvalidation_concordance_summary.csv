@@ -1,0 +1,11 @@
+"Metric","Value"
+"Shared genes",27072
+"Pearson r",0.0337
+"Pearson p",2.97626857720532e-08
+"Spearman rho",0.0241
+"Spearman p",7.19294294922917e-05
+"Genome-wide sign concordance (%)",50.6
+"Sign concordance |LFC|>0.5 (%)",51.5
+"RRHO peak -log10(p)",14.07
+"Overlap fold enrichment",94.657
+"Overlap hypergeometric p",0.0105153824486831

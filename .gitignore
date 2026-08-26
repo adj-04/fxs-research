@@ -1,0 +1,31 @@
+# Checkpoints
+*.RData
+
+# Input data — download from GEO / STRING / TRRUST (see README)
+GSE*_raw_counts_*.tsv.gz
+GSE*_norm_counts_*.tsv.gz
+GSE41273_blood_matrix_signal_intensities.txt.gz
+GSE41273_methylation_matrix.csv
+GSE202177_*
+GSE7329_*
+GPL1708_old_annotations.txt.gz
+Human.GRCh38.p13.annot.tsv.gz
+9606.protein.links.v12.0.txt
+trrust_rawdata.human.tsv
+
+# Large regenerable outputs (>10MB)
+GENIE3_edge_list*.csv
+LIONESS_diff_edges.csv
+DMP_FXS_vs_Control_all.csv
+*_group_network.csv
+GSE*_VST_normalized.csv
+PANDA_edge_list_with_null.csv
+motif_edgelist_methylation_weighted.csv
+FXS_ALPACA_DWBM*.txt
+
+# Session junk
+*.cys
+rsession.odt
+.Rhistory
+.RDataTmp*
+.~lock.*

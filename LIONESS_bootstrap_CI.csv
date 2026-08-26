@@ -1,0 +1,3 @@
+"Statistic","Observed","CI_lower","CI_upper","N_boot","N_FXS","N_Control"
+"Prop. edges stronger in FXS",0.498718023261266,0.466780437803965,0.522590955952642,1000,6,6
+"Mean edge diff (FXS-Control)",0.0029623664147663,-0.0253254787055338,0.0272336105404134,1000,6,6
