@@ -24,8 +24,42 @@ library(igraph)
 library(RCy3)
 library(ggvenn)
 
+# ------------------------------------------------------------
+# PATHS  (relative to the repo root)
+# ------------------------------------------------------------
 setwd("~/Desktop/final report")
-load("checkpoint_step8.RData")
+
+DATA_DIR        <- "data"
+CHECKPOINTS_DIR <- "checkpoints"
+NETWORKS_DIR    <- "networks"
+
+RESULTS_ALPACA  <- file.path("results", "ALPACA")
+RESULTS_DE      <- file.path("results", "DE")
+RESULTS_GENIE3  <- file.path("results", "GENIE3")
+RESULTS_LIONESS <- file.path("results", "LIONESS")
+RESULTS_METH    <- file.path("results", "methylation")
+RESULTS_OTHER   <- file.path("results", "other")
+RESULTS_PANDA   <- file.path("results", "PANDA")
+RESULTS_VALID   <- file.path("results", "validation")
+
+FIG_ALPACA  <- file.path("figures", "ALPACA")
+FIG_DE      <- file.path("figures", "DE")
+FIG_GENIE3  <- file.path("figures", "GENIE3")
+FIG_LIONESS <- file.path("figures", "LIONESS")
+FIG_METH    <- file.path("figures", "methylation")
+FIG_OTHER   <- file.path("figures", "other")
+FIG_PANDA   <- file.path("figures", "PANDA")
+FIG_VALID   <- file.path("figures", "validation")
+
+# make sure every output folder exists
+for (d in c(DATA_DIR, CHECKPOINTS_DIR, NETWORKS_DIR,
+            RESULTS_ALPACA, RESULTS_DE, RESULTS_GENIE3, RESULTS_LIONESS,
+            RESULTS_METH, RESULTS_OTHER, RESULTS_PANDA, RESULTS_VALID,
+            FIG_ALPACA, FIG_DE, FIG_GENIE3, FIG_LIONESS, FIG_METH,
+            FIG_OTHER, FIG_PANDA, FIG_VALID)) {
+  if (!dir.exists(d)) dir.create(d, recursive = TRUE)
+}
+load(file.path(CHECKPOINTS_DIR, "checkpoint_step8.RData"))
 cat("Checkpoint loaded. Objects:", length(ls()), "\n")
 
 RUN_CYTOSCAPE <- TRUE     # FALSE if Cytoscape is not running
@@ -74,15 +108,16 @@ cat("GENIE3 TF/Target nodes:", sum(V(g_genie3)$type == "TF"), "/",
 cat("PANDA TF/Target nodes:", sum(V(g_panda)$type == "TF"), "/",
     sum(V(g_panda)$type == "Target"), "\n")
 
-write_graph(g_genie3, "GENIE3_network.graphml", format = "graphml")
-write_graph(g_panda,  "PANDA_network.graphml",  format = "graphml")
+write_graph(g_genie3, file.path(RESULTS_GENIE3, "GENIE3_network.graphml"), format = "graphml")
+write_graph(g_panda,  file.path(RESULTS_PANDA, "PANDA_network.graphml"),  format = "graphml")
 
 for (nm in c("genie3", "panda")) {
   g   <- if (nm == "genie3") g_genie3 else g_panda
   col <- if (nm == "genie3") "#3498DB" else "#2ECC71"
+  fig_dir <- if (nm == "genie3") FIG_GENIE3 else FIG_PANDA
   V(g)$degree <- degree(g, mode = "all")
   set.seed(42); lay <- layout_with_fr(g)
-  png(paste0(toupper(nm), "_network_plot.png"),
+  png(file.path(fig_dir, paste0(toupper(nm), "_network_plot.png")),
       width = 2000, height = 2000, res = 200)
   plot(g, layout = lay,
        vertex.size = scales::rescale(V(g)$degree, to = c(1, 8)),
@@ -117,7 +152,7 @@ genie3_centrality <- genie3_centrality[order(genie3_centrality$PageRank,
                                              decreasing = TRUE), ]
 cat("\nTop 20 hub genes — GENIE3 (by PageRank):\n")
 print(head(genie3_centrality, 20))
-write.csv(genie3_centrality, "GENIE3_centrality.csv", row.names = FALSE)
+write.csv(genie3_centrality, file.path(RESULTS_GENIE3, "GENIE3_centrality.csv"), row.names = FALSE)
 
 panda_centrality <- data.frame(
   Gene = V(g_panda)$name, Type = V(g_panda)$type,
@@ -130,7 +165,7 @@ panda_centrality <- panda_centrality[order(panda_centrality$OutDegree,
                                            decreasing = TRUE), ]
 cat("\nTop 20 hub genes — PANDA (by OutDegree):\n")
 print(head(panda_centrality, 20))
-write.csv(panda_centrality, "PANDA_centrality.csv", row.names = FALSE)
+write.csv(panda_centrality, file.path(RESULTS_PANDA, "PANDA_centrality.csv"), row.names = FALSE)
 
 cat("\nKnown FXS TFs in GENIE3 top 50:\n")
 print(intersect(known_tf, head(genie3_centrality$Gene, 50)))
@@ -145,7 +180,7 @@ ggplot(top20_genie3, aes(x = Gene, y = PageRank, fill = Type)) +
   scale_fill_manual(values = c("TF" = "#E74C3C", "Target" = "#3498DB")) +
   labs(title = "Top 20 Hub Genes — GENIE3 Network",
        x = "Gene", y = "PageRank Score") + theme_bw()
-ggsave("GENIE3_hub_genes.png", width = 8, height = 6, dpi = 300)
+ggsave(file.path(FIG_GENIE3, "GENIE3_hub_genes.png"), width = 8, height = 6, dpi = 300)
 
 top20_panda <- head(panda_centrality, 20)
 top20_panda$Gene <- factor(top20_panda$Gene,
@@ -155,7 +190,7 @@ ggplot(top20_panda, aes(x = Gene, y = OutDegree, fill = Type)) +
   scale_fill_manual(values = c("TF" = "#E74C3C", "Target" = "#2ECC71")) +
   labs(title = "Top 20 Hub TFs — PANDA Network (by OutDegree)",
        x = "Gene", y = "OutDegree (targets regulated)") + theme_bw()
-ggsave("PANDA_hub_genes.png", width = 8, height = 6, dpi = 300)
+ggsave(file.path(FIG_PANDA, "PANDA_hub_genes.png"), width = 8, height = 6, dpi = 300)
 
 genie3_known <- genie3_centrality[genie3_centrality$Gene %in% known_tf,
                                   c("Gene","OutDegree","Betweenness","PageRank")]
@@ -176,7 +211,7 @@ if (nrow(combined_known) > 0) {
     theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 12),
           plot.title = element_text(hjust = 0.5, face = "bold"),
           plot.subtitle = element_text(hjust = 0.5))
-  ggsave("FXS_TF_OutDegree_comparison.png", width = 9, height = 6, dpi = 300)
+  ggsave(file.path(FIG_OTHER, "FXS_TF_OutDegree_comparison.png"), width = 9, height = 6, dpi = 300)
 }
 
 cat("Step 10 done\n")
@@ -286,7 +321,7 @@ diff_df <- diff_df[order(abs(diff_df$Diff), decreasing = TRUE), ]
 
 cat("Differential edges:", nrow(diff_df),
     "| FXS >:", sum(diff_df$Diff > 0), "| FXS <:", sum(diff_df$Diff < 0), "\n")
-write.csv(diff_df, "LIONESS_diff_edges.csv", row.names = FALSE)
+write.csv(diff_df, file.path(RESULTS_LIONESS, "LIONESS_diff_edges.csv"), row.names = FALSE)
 
 cat("NOTE: timepoint is NOT adjusted for in LIONESS — no covariate\n")
 cat("mechanism exists. Edge differences confound genotype and stage.\n")
@@ -300,7 +335,7 @@ ggplot(diff_df, aes(x = Control, y = FXS)) +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5, face = "bold"),
         plot.subtitle = element_text(hjust = 0.5))
-ggsave("LIONESS_FXS_vs_Control_scatter.png", width = 8, height = 6, dpi = 300)
+ggsave(file.path(FIG_LIONESS, "LIONESS_FXS_vs_Control_scatter.png"), width = 8, height = 6, dpi = 300)
 
 top_edges <- head(diff_df, 20)
 top_edges$Label <- paste0(top_edges$TF, " -> ", top_edges$Target)
@@ -316,7 +351,7 @@ ggplot(top_edges, aes(x = reorder(Label, Diff), y = Diff, fill = Diff > 0)) +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5, face = "bold"),
         plot.subtitle = element_text(hjust = 0.5))
-ggsave("LIONESS_top_edges_barplot.png", width = 9, height = 6, dpi = 300)
+ggsave(file.path(FIG_LIONESS, "LIONESS_top_edges_barplot.png"), width = 9, height = 6, dpi = 300)
 
 known_diff <- diff_df[diff_df$TF %in% known_tf, ]
 if (nrow(known_diff) > 0) {
@@ -338,7 +373,7 @@ if (nrow(known_diff) > 0) {
     theme(plot.title = element_text(hjust = 0.5, face = "bold"),
           plot.subtitle = element_text(hjust = 0.5),
           axis.text.y = element_text(size = 12, face = "bold"))
-  ggsave("LIONESS_known_TF_activity.png", width = 7, height = 5, dpi = 300)
+  ggsave(file.path(FIG_LIONESS, "LIONESS_known_TF_activity.png"), width = 7, height = 5, dpi = 300)
 }
 
 edge_parts <- strsplit(rownames(lioness_df), "__")
@@ -355,8 +390,8 @@ cat("TFs:", length(unique(fxs_net$TF)),
 if (length(unique(fxs_net$TF)) >= length(unique(fxs_net$Gene)))
   cat("WARNING: TFs >= targets — condor/ALPACA will fail. Raise N_TARGET_POOL.\n")
 
-write.csv(fxs_net,     "FXS_group_network.csv",     row.names = FALSE)
-write.csv(control_net, "Control_group_network.csv", row.names = FALSE)
+write.csv(fxs_net,     file.path(RESULTS_ALPACA, "FXS_group_network.csv"),     row.names = FALSE)
+write.csv(control_net, file.path(RESULTS_OTHER, "Control_group_network.csv"), row.names = FALSE)
 cat("Step 11 done\n")
 
 # ============================================================
@@ -366,12 +401,12 @@ cat("Step 11 done\n")
 cat("\nRunning ALPACA...\n")
 alpaca_result <- netZooR::pandaToAlpaca(
   panda.net1 = fxs_net, panda.net2 = control_net,
-  file.stem = "./FXS_ALPACA", verbose = TRUE)
+  file.stem = file.path(RESULTS_ALPACA, "FXS_ALPACA"), verbose = TRUE)
 
-memb_file <- read.table("FXS_ALPACA_ALPACA_final_memb.txt", header = FALSE,
+memb_file <- read.table(file.path(RESULTS_ALPACA, "FXS_ALPACA_ALPACA_final_memb.txt"), header = FALSE,
                         sep = "\t", stringsAsFactors = FALSE,
                         col.names = c("Node", "Module"))
-scores_file <- read.table("FXS_ALPACA_ALPACA_scores.txt", header = FALSE,
+scores_file <- read.table(file.path(RESULTS_ALPACA, "FXS_ALPACA_ALPACA_scores.txt"), header = FALSE,
                           sep = "\t", stringsAsFactors = FALSE,
                           col.names = c("Node", "Score"))
 
@@ -388,7 +423,7 @@ print(head(alpaca_df[, c("Gene", "Module", "Score", "Type")], 20))
 cat("\nKnown FXS TFs in ALPACA:\n")
 print(alpaca_df[alpaca_df$Gene %in% known_tf,
                 c("Gene", "Module", "Score", "Type")])
-write.csv(alpaca_df, "ALPACA_results.csv", row.names = FALSE)
+write.csv(alpaca_df, file.path(RESULTS_ALPACA, "ALPACA_results.csv"), row.names = FALSE)
 
 module_counts <- alpaca_df %>% count(Module, name = "Count") %>%
   arrange(desc(Count))
@@ -399,7 +434,7 @@ ggplot(head(module_counts, 15),
   labs(title = "ALPACA Module Sizes — FXS vs Control",
        x = "Module", y = "Nodes") +
   theme_bw() + theme(plot.title = element_text(hjust = 0.5, face = "bold"))
-ggsave("ALPACA_module_sizes.png", width = 8, height = 6, dpi = 300)
+ggsave(file.path(FIG_ALPACA, "ALPACA_module_sizes.png"), width = 8, height = 6, dpi = 300)
 
 known_alpaca <- alpaca_df[alpaca_df$Gene %in% known_tf, ]
 if (nrow(known_alpaca) > 0) {
@@ -410,7 +445,7 @@ if (nrow(known_alpaca) > 0) {
     labs(title = "Known FXS TFs — ALPACA Module Assignment",
          x = "Transcription Factor", y = "ALPACA Score") +
     theme_bw() + theme(plot.title = element_text(hjust = 0.5, face = "bold"))
-  ggsave("ALPACA_FXS_TF_modules.png", width = 8, height = 5, dpi = 300)
+  ggsave(file.path(FIG_ALPACA, "ALPACA_FXS_TF_modules.png"), width = 8, height = 5, dpi = 300)
 }
 
 ggplot(head(alpaca_df, 20), aes(x = reorder(Gene, Score), y = Score, fill = Type)) +
@@ -419,7 +454,7 @@ ggplot(head(alpaca_df, 20), aes(x = reorder(Gene, Score), y = Score, fill = Type
   labs(title = "Top 20 ALPACA Nodes — FXS Differential Modules",
        x = "Gene", y = "ALPACA Score") +
   theme_bw() + theme(plot.title = element_text(hjust = 0.5, face = "bold"))
-ggsave("ALPACA_top_nodes.png", width = 8, height = 6, dpi = 300)
+ggsave(file.path(FIG_ALPACA, "ALPACA_top_nodes.png"), width = 8, height = 6, dpi = 300)
 
 cat("Step 12 done\n")
 
@@ -453,14 +488,14 @@ module_go_results <- compareCluster(
   readable = TRUE)
 
 go_df <- as.data.frame(module_go_results)
-write.csv(go_df, "ALPACA_module_GO_enrichment.csv", row.names = FALSE)
+write.csv(go_df, file.path(RESULTS_ALPACA, "ALPACA_module_GO_enrichment.csv"), row.names = FALSE)
 
 if (nrow(go_df) > 0) {
   dotplot(module_go_results, showCategory = 5, includeAll = FALSE) +
     ggtitle("GO BP Enrichment — ALPACA Modules") +
     theme(plot.title = element_text(hjust = 0.5, face = "bold"),
           axis.text.x = element_text(angle = 45, hjust = 1))
-  ggsave("ALPACA_module_GO_dotplot.png", width = 12, height = 8, dpi = 300)
+  ggsave(file.path(FIG_ALPACA, "ALPACA_module_GO_dotplot.png"), width = 12, height = 8, dpi = 300)
 }
 
 top_hits <- alpaca_df %>% filter(Score > 0.05, !is.na(ENTREZID)) %>%
@@ -497,13 +532,13 @@ if (!is.null(top_go_relaxed))
   cat("GO terms (relaxed):", nrow(as.data.frame(top_go_relaxed)), "\n")
 
 if (!is.null(top_go_strict))
-  write.csv(as.data.frame(top_go_strict),  "ALPACA_topHits_GO_strict.csv",  row.names = FALSE)
+  write.csv(as.data.frame(top_go_strict),  file.path(RESULTS_ALPACA, "ALPACA_topHits_GO_strict.csv"),  row.names = FALSE)
 if (!is.null(top_go_relaxed))
-  write.csv(as.data.frame(top_go_relaxed), "ALPACA_topHits_GO_relaxed.csv", row.names = FALSE)
+  write.csv(as.data.frame(top_go_relaxed), file.path(RESULTS_ALPACA, "ALPACA_topHits_GO_relaxed.csv"), row.names = FALSE)
 if (!is.null(top_kegg_strict))
-  write.csv(as.data.frame(top_kegg_strict),  "ALPACA_topHits_KEGG_strict.csv",  row.names = FALSE)
+  write.csv(as.data.frame(top_kegg_strict),  file.path(RESULTS_ALPACA, "ALPACA_topHits_KEGG_strict.csv"),  row.names = FALSE)
 if (!is.null(top_kegg_relaxed))
-  write.csv(as.data.frame(top_kegg_relaxed), "ALPACA_topHits_KEGG_relaxed.csv", row.names = FALSE)
+  write.csv(as.data.frame(top_kegg_relaxed), file.path(RESULTS_ALPACA, "ALPACA_topHits_KEGG_relaxed.csv"), row.names = FALSE)
 
 best_go <- top_go_relaxed
 if (!is.null(top_go_strict) && nrow(as.data.frame(top_go_strict)) >= 3) {
@@ -514,7 +549,7 @@ if (!is.null(best_go) && nrow(as.data.frame(best_go)) > 0) {
   dotplot(best_go, showCategory = 20) +
     ggtitle("GO BP — Top ALPACA Scoring Genes") +
     theme(plot.title = element_text(hjust = 0.5, face = "bold"))
-  ggsave("ALPACA_topHits_GO_dotplot.png", width = 10, height = 8, dpi = 300)
+  ggsave(file.path(FIG_ALPACA, "ALPACA_topHits_GO_dotplot.png"), width = 10, height = 8, dpi = 300)
 }
 
 best_kegg <- NULL
@@ -530,7 +565,7 @@ if (!is.null(best_kegg)) {
   dotplot(best_kegg, showCategory = 20) +
     ggtitle("KEGG Pathways — Top ALPACA Scoring Genes") +
     theme(plot.title = element_text(hjust = 0.5, face = "bold"))
-  ggsave("ALPACA_topHits_KEGG_dotplot.png", width = 10, height = 8, dpi = 300)
+  ggsave(file.path(FIG_ALPACA, "ALPACA_topHits_KEGG_dotplot.png"), width = 10, height = 8, dpi = 300)
 }
 cat("Step 13 done\n")
 
@@ -539,45 +574,45 @@ cat("Step 13 done\n")
 # ============================================================
 
 if (RUN_CYTOSCAPE) {
-
+  
   top_module_ids <- alpaca_df %>%
     group_by(Module) %>%
     summarise(mean_score = mean(Score), n = n(), .groups = "drop") %>%
     filter(n >= 5) %>% arrange(desc(mean_score)) %>% head(3) %>% pull(Module)
-
+  
   top_nodes <- alpaca_df %>%
     filter(Module %in% top_module_ids) %>%
     dplyr::select(Gene, Module, Score, Type) %>%
     distinct()
   cat("Top modules:", top_module_ids, "| nodes:", nrow(top_nodes), "\n")
-
+  
   edge_table <- edge_list_panda %>%
     filter(TF %in% top_nodes$Gene, Target %in% top_nodes$Gene) %>%
     rename(Gene = Target)
   cat("Edges in subnetwork:", nrow(edge_table), "\n")
-
+  
   cytoscapePing()
-
+  
   node_table <- top_nodes %>%
     rename(id = Gene) %>%
     mutate(label     = id,
            Module    = as.character(Module),
            Score     = round(Score, 4),
            NodeColor = ifelse(Type == "TF", "#E74C3C", "#3498DB"))
-
+  
   createNetworkFromDataFrames(
     nodes = node_table,
     edges = edge_table %>% rename(source = TF, target = Gene),
     title = "FXS_ALPACA_TopModules", collection = "FXS_PANDA_ALPACA")
   cat("Network created\n")
-
+  
   cat("Node table columns in Cytoscape:\n")
   print(head(getTableColumns("node"), 3))
-
+  
   style_name <- "FXS_ALPACA_Style"
   if (style_name %in% getVisualStyleNames()) deleteVisualStyle(style_name)
   createVisualStyle(style_name)
-
+  
   setNodeColorMapping(table.column = "Type",
                       table.column.values = c("TF", "Target"),
                       colors = c("#E74C3C", "#3498DB"),
@@ -591,7 +626,7 @@ if (RUN_CYTOSCAPE) {
                       table.column.values = c("TF", "Target"),
                       shapes = c("ELLIPSE", "ROUND_RECTANGLE"),
                       style.name = style_name)
-
+  
   setNodeBorderColorDefault("#FFFFFF", style.name = style_name)
   setNodeBorderWidthDefault(2,  style.name = style_name)
   setNodeFontSizeDefault(20, style.name = style_name)
@@ -602,20 +637,20 @@ if (RUN_CYTOSCAPE) {
   setEdgeLineWidthDefault(0.5, style.name = style_name)
   setBackgroundColorDefault("#FFFFFF", style.name = style_name)
   setVisualStyle(style_name)
-
+  
   layoutNetwork("kamada-kawai")
   Sys.sleep(3)
   fitContent()
-
-  exportImage("FXS_ALPACA_network_final.png", type = "PNG",
+  
+  exportImage(file.path(FIG_ALPACA, "FXS_ALPACA_network_final.png"), type = "PNG",
               resolution = 300, zoom = 200)
-  exportNetwork("FXS_ALPACA_network.xgmml", type = "xgmml")
-  write.csv(edge_table, "FXS_ALPACA_edges.csv", row.names = FALSE)
-  write.csv(node_table, "FXS_ALPACA_nodes.csv", row.names = FALSE)
-
+  exportNetwork(file.path(NETWORKS_DIR, "FXS_ALPACA_network.xgmml"), type = "xgmml")
+  write.csv(edge_table, file.path(RESULTS_ALPACA, "FXS_ALPACA_edges.csv"), row.names = FALSE)
+  write.csv(node_table, file.path(RESULTS_ALPACA, "FXS_ALPACA_nodes.csv"), row.names = FALSE)
+  
   cat("Step 14 done. If labels remain hidden the network is dense —\n")
   cat("filter to fewer nodes or raise the font further.\n")
-
+  
 } else {
   cat("Step 14 skipped (RUN_CYTOSCAPE = FALSE)\n")
 }
@@ -626,7 +661,7 @@ if (RUN_CYTOSCAPE) {
 
 cat("\n=== Step 15: Validation cohort — GSE218676 ===\n")
 
-v_raw <- read.delim(gzfile("GSE218676_raw_counts_GRCh38.p13_NCBI.tsv.gz"),
+v_raw <- read.delim(gzfile(file.path(DATA_DIR, "GSE218676_raw_counts_GRCh38.p13_NCBI.tsv.gz")),
                     header = TRUE, check.names = FALSE, stringsAsFactors = FALSE)
 stopifnot(colnames(v_raw)[1] == "GeneID")
 
@@ -638,7 +673,7 @@ cat("GSE218676 — genes:", nrow(v_counts), "| samples:", ncol(v_counts), "\n")
 cat("NOTE: NCBI reprocessed 20 of 26 submitted samples. FXS_426_NPC\n")
 cat("(both replicates) is absent, giving 5 FXS vs 5 Control.\n")
 
-v_meta_all <- read.csv("GSE218676_metadata.csv", row.names = 1,
+v_meta_all <- read.csv(file.path(DATA_DIR, "GSE218676_metadata.csv"), row.names = 1,
                        stringsAsFactors = FALSE)
 missing <- setdiff(v_gsm, rownames(v_meta_all))
 if (length(missing) > 0)
@@ -710,12 +745,12 @@ deg_valid <- deg_valid[order(deg_valid$padj, na.last = TRUE), ]
 cat("\nValidation FXS:", sum(colData(v_dds)$condition == "FXS"),
     "| Control:", sum(colData(v_dds)$condition == "Control"), "\n")
 summary(v_res, alpha = 0.05)
-write.csv(deg_valid, "GSE218676_validation_DEA_all.csv")
+write.csv(deg_valid, file.path(RESULTS_VALID, "GSE218676_validation_DEA_all.csv"))
 
 sig_valid <- deg_valid %>%
   filter(!is.na(padj), padj < 0.05, abs(log2FoldChange) > 1) %>%
   arrange(padj)
-write.csv(sig_valid, "GSE218676_validation_DEA_significant.csv")
+write.csv(sig_valid, file.path(RESULTS_VALID, "GSE218676_validation_DEA_significant.csv"))
 cat("Validation DEGs:", nrow(sig_valid), "\n")
 
 v_fmr1 <- deg_valid[which(deg_valid$Symbol == "FMR1"), ]
@@ -742,18 +777,18 @@ if (length(overlap_genes) > 0) {
     mean(sig_degs$log2FoldChange[sig_degs$Symbol == g], na.rm = TRUE))
   v_lfc <- sapply(overlap_genes, function(g)
     mean(sig_valid$log2FoldChange[sig_valid$Symbol == g], na.rm = TRUE))
-
+  
   dir_check2 <- data.frame(Gene = overlap_genes,
                            Primary_LFC = p_lfc, Validation_LFC = v_lfc) %>%
     filter(!is.na(Primary_LFC), !is.na(Validation_LFC))
   direction_concordant <- sum(sign(dir_check2$Primary_LFC) ==
                                 sign(dir_check2$Validation_LFC))
   common_for_direction <- nrow(dir_check2)
-
+  
   cat("\nDirection check:\n"); print(dir_check2)
   cat("Concordant:", direction_concordant, "/", common_for_direction, "\n")
-  write.csv(dir_check2, "crossvalidation_overlap_genes.csv", row.names = FALSE)
-
+  write.csv(dir_check2, file.path(RESULTS_VALID, "crossvalidation_overlap_genes.csv"), row.names = FALSE)
+  
   dir_check2$Direction <- ifelse(sign(dir_check2$Primary_LFC) ==
                                    sign(dir_check2$Validation_LFC),
                                  "Concordant", "Discordant")
@@ -773,7 +808,7 @@ if (length(overlap_genes) > 0) {
     theme_bw() +
     theme(plot.title = element_text(hjust = 0.5, face = "bold"),
           plot.subtitle = element_text(hjust = 0.5))
-  ggsave("crossvalidation_direction_concordance.png",
+  ggsave(file.path(FIG_VALID, "crossvalidation_direction_concordance.png"),
          width = 8, height = 6, dpi = 300)
 } else {
   cat("No overlapping DEGs — the Step 16 rank-based analysis still applies\n")
@@ -795,7 +830,7 @@ ggvenn(list("Organoids\n(GSE146339)" = primary_genes,
        subtitle = paste0(length(overlap_genes), " genes replicated")) +
   theme(plot.title = element_text(hjust = 0.5, face = "bold", size = 14),
         plot.subtitle = element_text(hjust = 0.5, size = 11))
-ggsave("crossvalidation_venn.png", width = 8, height = 6, dpi = 300)
+ggsave(file.path(FIG_VALID, "crossvalidation_venn.png"), width = 8, height = 6, dpi = 300)
 
 cat("Step 15 done\n")
 
@@ -863,7 +898,7 @@ write.csv(data.frame(Background_N = N, Primary_DEGs = K, Validation_DEGs = M,
                      Fold_enrichment = fold_enrichment,
                      Hypergeometric_p = hyper_p, Fisher_p = fisher_res$p.value,
                      Fisher_OR = as.numeric(fisher_res$estimate)),
-          "crossvalidation_overlap_significance.csv", row.names = FALSE)
+          file.path(RESULTS_VALID, "crossvalidation_overlap_significance.csv"), row.names = FALSE)
 
 # ---- 16C: RRHO ----
 
@@ -895,7 +930,7 @@ if (requireNamespace("RRHO2", quietly = TRUE)) {
     data.frame(Gene = valid_shared$Gene,   Value = valid_shared$rank_metric),
     labels = c("Organoids (GSE146339)", "NPC/B-cell (GSE218676)"),
     log10.ind = TRUE)
-  png("RRHO2_heatmap.png", width = 2000, height = 2000, res = 250)
+  png(file.path(FIG_VALID, "RRHO2_heatmap.png"), width = 2000, height = 2000, res = 250)
   RRHO2::RRHO2_heatmap(rrho_obj); dev.off()
   rrho_max <- max(rrho_obj$hypermat, na.rm = TRUE)
   cat("RRHO2 peak -log10(p):", round(rrho_max, 2), "\n")
@@ -918,8 +953,8 @@ if (requireNamespace("RRHO2", quietly = TRUE)) {
     theme_bw() +
     theme(plot.title = element_text(hjust = 0.5, face = "bold"),
           plot.subtitle = element_text(hjust = 0.5))
-  ggsave("RRHO_manual_heatmap.png", width = 8, height = 7, dpi = 300)
-  write.csv(rrho_long, "RRHO_manual_matrix.csv", row.names = FALSE)
+  ggsave(file.path(FIG_VALID, "RRHO_manual_heatmap.png"), width = 8, height = 7, dpi = 300)
+  write.csv(rrho_long, file.path(RESULTS_VALID, "RRHO_manual_matrix.csv"), row.names = FALSE)
 }
 
 # ---- 16D: GLOBAL EFFECT-SIZE CORRELATION ----
@@ -967,8 +1002,8 @@ ggplot(lfc_df, aes(x = Primary_LFC, y = Validation_LFC)) +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5, face = "bold"),
         plot.subtitle = element_text(hjust = 0.5))
-ggsave("crossvalidation_global_LFC_correlation.png", width = 8, height = 7, dpi = 300)
-write.csv(lfc_df, "crossvalidation_shared_gene_LFC.csv", row.names = FALSE)
+ggsave(file.path(FIG_VALID, "crossvalidation_global_LFC_correlation.png"), width = 8, height = 7, dpi = 300)
+write.csv(lfc_df, file.path(RESULTS_VALID, "crossvalidation_shared_gene_LFC.csv"), row.names = FALSE)
 
 write.csv(data.frame(
   Metric = c("Shared genes","Pearson r","Pearson p","Spearman rho","Spearman p",
@@ -981,7 +1016,7 @@ write.csv(data.frame(
             round(mean(sign(lfc_strong$Primary_LFC) ==
                          sign(lfc_strong$Validation_LFC)) * 100, 1),
             round(rrho_max, 3), round(fold_enrichment, 3), hyper_p)),
-  "crossvalidation_concordance_summary.csv", row.names = FALSE)
+  file.path(RESULTS_VALID, "crossvalidation_concordance_summary.csv"), row.names = FALSE)
 
 cat("Step 16 done\n")
 
@@ -994,6 +1029,6 @@ rm(v_dds, v_res, module_go_results, top_go_strict, top_go_relaxed,
    g_genie3, g_panda, genie3_filtered, panda_filtered)
 gc(verbose = FALSE)
 
-save.image("checkpoint_step16.RData")
+save.image(file.path(CHECKPOINTS_DIR, "checkpoint_step16.RData"))
 cat("\n=== PART 2 COMPLETE — checkpoint_step16.RData saved ===\n")
 cat("Restart R, then run part3_steps17-19.R\n")

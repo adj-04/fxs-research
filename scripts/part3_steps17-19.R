@@ -27,8 +27,42 @@ library(igraph)
 library(httr)
 library(jsonlite)
 
+# ------------------------------------------------------------
+# PATHS  (relative to the repo root)
+# ------------------------------------------------------------
 setwd("~/Desktop/final report")
-load("checkpoint_step16.RData")
+
+DATA_DIR        <- "data"
+CHECKPOINTS_DIR <- "checkpoints"
+NETWORKS_DIR    <- "networks"
+
+RESULTS_ALPACA  <- file.path("results", "ALPACA")
+RESULTS_DE      <- file.path("results", "DE")
+RESULTS_GENIE3  <- file.path("results", "GENIE3")
+RESULTS_LIONESS <- file.path("results", "LIONESS")
+RESULTS_METH    <- file.path("results", "methylation")
+RESULTS_OTHER   <- file.path("results", "other")
+RESULTS_PANDA   <- file.path("results", "PANDA")
+RESULTS_VALID   <- file.path("results", "validation")
+
+FIG_ALPACA  <- file.path("figures", "ALPACA")
+FIG_DE      <- file.path("figures", "DE")
+FIG_GENIE3  <- file.path("figures", "GENIE3")
+FIG_LIONESS <- file.path("figures", "LIONESS")
+FIG_METH    <- file.path("figures", "methylation")
+FIG_OTHER   <- file.path("figures", "other")
+FIG_PANDA   <- file.path("figures", "PANDA")
+FIG_VALID   <- file.path("figures", "validation")
+
+# make sure every output folder exists
+for (d in c(DATA_DIR, CHECKPOINTS_DIR, NETWORKS_DIR,
+            RESULTS_ALPACA, RESULTS_DE, RESULTS_GENIE3, RESULTS_LIONESS,
+            RESULTS_METH, RESULTS_OTHER, RESULTS_PANDA, RESULTS_VALID,
+            FIG_ALPACA, FIG_DE, FIG_GENIE3, FIG_LIONESS, FIG_METH,
+            FIG_OTHER, FIG_PANDA, FIG_VALID)) {
+  if (!dir.exists(d)) dir.create(d, recursive = TRUE)
+}
+load(file.path(CHECKPOINTS_DIR, "checkpoint_step16.RData"))
 cat("Checkpoint loaded. Objects:", length(ls()), "\n")
 
 # ------------------------------------------------------------
@@ -111,7 +145,7 @@ cat("Edges with empirical FDR < 0.05:",
     sum(edge_list_genie3_sig$emp_FDR < 0.05, na.rm = TRUE), "\n")
 cat("NOTE: with this many edges tested, BH is severe. Report the\n")
 cat("nominal and FDR counts honestly rather than only the former.\n")
-write.csv(edge_list_genie3_sig, "GENIE3_edge_list_with_null.csv", row.names = FALSE)
+write.csv(edge_list_genie3_sig, file.path(RESULTS_GENIE3, "GENIE3_edge_list_with_null.csv"), row.names = FALSE)
 
 null_plot_df <- rbind(
   data.frame(Weight = sample(null_pool, min(100000, length(null_pool))),
@@ -134,7 +168,7 @@ ggplot(null_plot_df, aes(x = Weight, fill = Source)) +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5, face = "bold"),
         plot.subtitle = element_text(hjust = 0.5))
-ggsave("GENIE3_null_distribution.png", width = 9, height = 6, dpi = 300)
+ggsave(file.path(FIG_GENIE3, "GENIE3_null_distribution.png"), width = 9, height = 6, dpi = 300)
 
 rm(null_plot_df, null_pool); gc(verbose = FALSE)
 
@@ -147,7 +181,7 @@ if (nrow(genie3_null_filtered) > 0) {
                weight = genie3_null_filtered$Weight), directed = TRUE)
   V(g_genie3_null)$type <- ifelse(V(g_genie3_null)$name %in% tf_in_data,
                                   "TF", "Target")
-  write_graph(g_genie3_null, "GENIE3_network_nullfiltered.graphml",
+  write_graph(g_genie3_null, file.path(RESULTS_GENIE3, "GENIE3_network_nullfiltered.graphml"),
               format = "graphml")
   rm(g_genie3_null)
 }
@@ -157,7 +191,7 @@ gc(verbose = FALSE)
 
 if (RUN_PANDA_NULL) {
   cat("\n--- 17B: PANDA randomized-prior null (", N_PERM_PANDA, "runs) ---\n")
-
+  
   randomize_motif_degpres <- function(motif_df) {
     bg <- graph_from_data_frame(
       data.frame(from = paste0("TF_", motif_df$TF),
@@ -170,13 +204,13 @@ if (RUN_PANDA_NULL) {
                Score = motif_df$Score[sample(nrow(motif_df))],
                stringsAsFactors = FALSE)
   }
-
+  
   obs_scores <- setNames(edge_list_panda$Score,
                          paste(edge_list_panda$TF, edge_list_panda$Target,
                                sep = "__"))
   panda_exceed <- setNames(rep(0L, length(obs_scores)), names(obs_scores))
   panda_null_pool <- numeric(0)
-
+  
   for (p in seq_len(N_PERM_PANDA)) {
     cat("  PANDA null run", p, "/", N_PERM_PANDA, "\n")
     motif_rand <- randomize_motif_degpres(motif_edgelist)
@@ -205,17 +239,17 @@ if (RUN_PANDA_NULL) {
       (null_edges[common] >= obs_scores[common])
     rm(pr, rn, null_edges); gc(verbose = FALSE)
   }
-
+  
   panda_emp_p <- (panda_exceed + 1) / (N_PERM_PANDA + 1)
   panda_null_q95 <- quantile(panda_null_pool, 0.95, na.rm = TRUE)
-
+  
   edge_list_panda_sig <- edge_list_panda %>%
     mutate(Edge = paste(TF, Target, sep = "__"),
            emp_p = panda_emp_p[Edge],
            emp_FDR = p.adjust(panda_emp_p[Edge], method = "BH"),
            above_null95 = Score >= panda_null_q95) %>%
     arrange(emp_p, desc(Score))
-
+  
   cat("PANDA null 95th pct:", signif(panda_null_q95, 4), "\n")
   cat("Observed 90th pct was:", signif(panda_threshold, 4), "\n")
   cat("Edges above randomized-prior null q95:",
@@ -223,8 +257,8 @@ if (RUN_PANDA_NULL) {
   cat("INTERPRET: if the null q95 sits close to the observed 90th\n")
   cat("percentile, PANDA is largely reproducing its prior rather than\n")
   cat("adding expression-driven signal. Report this in Limitations.\n")
-  write.csv(edge_list_panda_sig, "PANDA_edge_list_with_null.csv", row.names = FALSE)
-
+  write.csv(edge_list_panda_sig, file.path(RESULTS_PANDA, "PANDA_edge_list_with_null.csv"), row.names = FALSE)
+  
   panda_cmp <- rbind(
     data.frame(Score = sample(as.numeric(panda_null_pool),
                               min(100000, length(panda_null_pool))),
@@ -243,7 +277,7 @@ if (RUN_PANDA_NULL) {
     theme_bw() +
     theme(plot.title = element_text(hjust = 0.5, face = "bold"),
           plot.subtitle = element_text(hjust = 0.5))
-  ggsave("PANDA_null_distribution.png", width = 9, height = 6, dpi = 300)
+  ggsave(file.path(FIG_PANDA, "PANDA_null_distribution.png"), width = 9, height = 6, dpi = 300)
   rm(panda_cmp, panda_null_pool); gc(verbose = FALSE)
 } else {
   cat("\n--- 17B skipped (RUN_PANDA_NULL = FALSE) ---\n")
@@ -286,10 +320,10 @@ if (!is.na(score_suffix)) {
   for (p in seq_len(N_PERM_ALPACA)) {
     if (p %% 10 == 0 || p == 1)
       cat("  ALPACA null run", p, "/", N_PERM_ALPACA, "\n")
-
+    
     fxs_null <- fxs_net
     fxs_null$Score <- fxs_net$Score[sample(nrow(fxs_net))]
-
+    
     stem <- paste0("./tmp_alpaca_null_", p)
     ar <- tryCatch(
       netZooR::pandaToAlpaca(panda.net1 = fxs_null, panda.net2 = control_net,
@@ -298,7 +332,7 @@ if (!is.na(score_suffix)) {
         n_failed <<- n_failed + 1
         if (n_failed <= 3) cat("    run", p, "failed:", conditionMessage(e), "\n")
         NULL })
-
+    
     sf <- paste0(stem, score_suffix)
     if (file.exists(sf)) {
       sc <- read.table(sf, header = FALSE, sep = "\t", stringsAsFactors = FALSE,
@@ -316,13 +350,13 @@ cat("Successful null runs:", length(alpaca_null_scores), "/", N_PERM_ALPACA, "\n
 if (length(alpaca_null_scores) >= 5) {
   null_all   <- do.call(rbind, alpaca_null_scores)
   null_split <- split(null_all$Score, null_all$Node)
-
+  
   node_null <- null_all %>%
     group_by(Node) %>%
     summarise(null_mean = mean(Score, na.rm = TRUE),
               null_sd = sd(Score, na.rm = TRUE),
               n_null = n(), .groups = "drop")
-
+  
   alpaca_sig <- alpaca_df %>% left_join(node_null, by = "Node")
   alpaca_sig$emp_p <- mapply(function(node, score) {
     nd <- null_split[[node]]
@@ -333,12 +367,12 @@ if (length(alpaca_null_scores) >= 5) {
   alpaca_sig$z_vs_null <- (alpaca_sig$Score - alpaca_sig$null_mean) /
     ifelse(is.na(alpaca_sig$null_sd) | alpaca_sig$null_sd == 0, NA,
            alpaca_sig$null_sd)
-
+  
   cat("ALPACA nodes with empirical p < 0.05:",
       sum(alpaca_sig$emp_p < 0.05, na.rm = TRUE), "\n")
   cat("ALPACA nodes with empirical FDR < 0.05:",
       sum(alpaca_sig$emp_FDR < 0.05, na.rm = TRUE), "\n")
-
+  
   module_sig <- alpaca_sig %>%
     group_by(Module) %>%
     summarise(n_nodes = n(), mean_score = mean(Score, na.rm = TRUE),
@@ -352,15 +386,15 @@ if (length(alpaca_null_scores) >= 5) {
               }, .groups = "drop") %>%
     mutate(module_FDR = p.adjust(module_emp_p, method = "BH")) %>%
     arrange(module_emp_p)
-
+  
   cat("\nModule-level significance:\n"); print(as.data.frame(module_sig))
-  write.csv(alpaca_sig, "ALPACA_results_with_significance.csv", row.names = FALSE)
-  write.csv(module_sig, "ALPACA_module_significance.csv", row.names = FALSE)
-
+  write.csv(alpaca_sig, file.path(RESULTS_ALPACA, "ALPACA_results_with_significance.csv"), row.names = FALSE)
+  write.csv(module_sig, file.path(RESULTS_ALPACA, "ALPACA_module_significance.csv"), row.names = FALSE)
+  
   cat("\nKnown FXS TFs with ALPACA significance:\n")
   print(alpaca_sig[alpaca_sig$Gene %in% known_tf,
                    c("Gene","Module","Score","z_vs_null","emp_p","emp_FDR")])
-
+  
   ggplot(module_sig %>% filter(n_nodes >= 5),
          aes(x = reorder(factor(Module), -log10(module_emp_p)),
              y = -log10(module_emp_p), fill = module_emp_p < 0.05)) +
@@ -375,8 +409,8 @@ if (length(alpaca_null_scores) >= 5) {
     theme_bw() +
     theme(plot.title = element_text(hjust = 0.5, face = "bold"),
           plot.subtitle = element_text(hjust = 0.5))
-  ggsave("ALPACA_module_significance.png", width = 8, height = 6, dpi = 300)
-
+  ggsave(file.path(FIG_ALPACA, "ALPACA_module_significance.png"), width = 8, height = 6, dpi = 300)
+  
   rm(null_all, null_split, alpaca_null_scores); gc(verbose = FALSE)
 } else {
   cat("Too few successful null runs — do not report ALPACA significance.\n")
@@ -421,7 +455,7 @@ write.csv(data.frame(
   CI_lower = c(ci_prop[1], ci_diff[1]), CI_upper = c(ci_prop[2], ci_diff[2]),
   N_boot = N_BOOT_LIONESS, N_FXS = length(fxs_cols),
   N_Control = length(control_cols)),
-  "LIONESS_bootstrap_CI.csv", row.names = FALSE)
+  file.path(RESULTS_LIONESS, "LIONESS_bootstrap_CI.csv"), row.names = FALSE)
 
 ggplot(data.frame(prop = boot_stats[, "prop_up"]), aes(x = prop)) +
   geom_histogram(bins = 50, fill = "#3498DB", color = "white") +
@@ -436,7 +470,7 @@ ggplot(data.frame(prop = boot_stats[, "prop_up"]), aes(x = prop)) +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5, face = "bold"),
         plot.subtitle = element_text(hjust = 0.5))
-ggsave("LIONESS_bootstrap_distribution.png", width = 8, height = 5, dpi = 300)
+ggsave(file.path(FIG_LIONESS, "LIONESS_bootstrap_distribution.png"), width = 8, height = 5, dpi = 300)
 
 rm(lioness_mat, boot_stats); gc(verbose = FALSE)
 cat("Step 17 done\n")
@@ -501,8 +535,8 @@ panda_strength <- edge_list_panda %>%
 cat("\nKnown FXS TFs — raw vs weighted (PANDA):\n")
 print(as.data.frame(panda_strength %>% filter(TF %in% known_tf)))
 
-write.csv(genie3_strength, "GENIE3_weighted_degree.csv", row.names = FALSE)
-write.csv(panda_strength,  "PANDA_weighted_degree.csv",  row.names = FALSE)
+write.csv(genie3_strength, file.path(RESULTS_GENIE3, "GENIE3_weighted_degree.csv"), row.names = FALSE)
+write.csv(panda_strength,  file.path(RESULTS_PANDA, "PANDA_weighted_degree.csv"),  row.names = FALSE)
 
 known_rank_cmp <- bind_rows(
   genie3_strength %>% filter(TF %in% known_tf) %>%
@@ -518,7 +552,7 @@ if (nrow(known_rank_cmp) > 0) {
                  values_to = "Rank") %>%
     mutate(Metric = recode(Metric, Rank_Raw = "Raw out-degree",
                            Rank_Weighted = "Weight-based"))
-
+  
   ggplot(known_rank_cmp, aes(x = Metric, y = Rank, group = TF, color = TF)) +
     geom_line(linewidth = 1) + geom_point(size = 3) +
     geom_text_repel(aes(label = TF), size = 3.5, fontface = "bold",
@@ -531,7 +565,7 @@ if (nrow(known_rank_cmp) > 0) {
     theme(plot.title = element_text(hjust = 0.5, face = "bold"),
           plot.subtitle = element_text(hjust = 0.5, size = 9),
           legend.position = "none")
-  ggsave("known_TF_raw_vs_weighted_rank.png", width = 10, height = 6, dpi = 300)
+  ggsave(file.path(FIG_OTHER, "known_TF_raw_vs_weighted_rank.png"), width = 10, height = 6, dpi = 300)
 }
 
 # ---- 18B: TARGET-LIST RESTRICTION BIAS ----
@@ -561,8 +595,8 @@ print(as.data.frame(motif_eligibility %>% filter(TF %in% known_tf)))
 cat("\nFOR DISCUSSION: a TF whose targets sit mostly outside the GENIE3\n")
 cat("gene set cannot become a degree hub, regardless of importance.\n")
 
-write.csv(motif_eligibility, "TF_target_eligibility_bias.csv", row.names = FALSE)
-write.csv(restriction_bias, "GENIE3_restriction_bias_summary.csv", row.names = FALSE)
+write.csv(motif_eligibility, file.path(RESULTS_METH, "TF_target_eligibility_bias.csv"), row.names = FALSE)
+write.csv(restriction_bias, file.path(RESULTS_GENIE3, "GENIE3_restriction_bias_summary.csv"), row.names = FALSE)
 
 # ---- 18C: MODULE-LOCAL CENTRALITY ----
 # PageRank is near-constant within these bipartite subgraphs (TFs have
@@ -580,11 +614,11 @@ for (m in unique(alpaca_modules$Module)) {
   sub_edges <- edge_list_panda %>%
     filter(TF %in% mod_genes, Target %in% mod_genes)
   if (nrow(sub_edges) < 3) next
-
+  
   g_mod <- graph_from_data_frame(
     data.frame(from = sub_edges$TF, to = sub_edges$Target,
                weight = sub_edges$Score), directed = TRUE)
-
+  
   cent <- data.frame(
     Gene = V(g_mod)$name, Module = m, Module_size = length(mod_genes),
     Local_Degree = degree(g_mod, mode = "all"),
@@ -602,7 +636,7 @@ if (length(module_local_centrality) > 0) {
   module_cent_df <- do.call(rbind, module_local_centrality)
   cat("Modules with computable local centrality:",
       length(module_local_centrality), "\n")
-
+  
   pr_var <- module_cent_df %>%
     group_by(Module) %>%
     summarise(n = n(),
@@ -612,11 +646,11 @@ if (length(module_local_centrality) > 0) {
   cat("\nDistinct centrality values per module:\n"); print(as.data.frame(pr_var))
   cat("PageRank is near-constant within modules (bipartite, no TF\n")
   cat("in-edges). Weighted out-strength is used for ranking.\n")
-
+  
   known_local <- module_cent_df %>%
     filter(Gene %in% known_tf) %>%
     arrange(desc(Local_Strength_pct))
-
+  
   cat("\nKnown FXS TFs — module-local centrality (weighted strength):\n")
   if (nrow(known_local) > 0) {
     print(as.data.frame(known_local[, c("Gene","Module","Module_size",
@@ -634,9 +668,9 @@ if (length(module_local_centrality) > 0) {
     cat("None of the known TFs appear in any module subnetwork.\n")
     cat("Report this directly — it is a real negative result.\n")
   }
-
-  write.csv(module_cent_df, "ALPACA_module_local_centrality.csv", row.names = FALSE)
-
+  
+  write.csv(module_cent_df, file.path(RESULTS_ALPACA, "ALPACA_module_local_centrality.csv"), row.names = FALSE)
+  
   if (nrow(known_local) > 0) {
     ggplot(known_local,
            aes(x = reorder(paste0(Gene, " (M", Module, ")"), Local_Strength_pct),
@@ -651,7 +685,7 @@ if (length(module_local_centrality) > 0) {
       theme_bw() +
       theme(plot.title = element_text(hjust = 0.5, face = "bold"),
             plot.subtitle = element_text(hjust = 0.5))
-    ggsave("known_TF_module_local_centrality.png", width = 8, height = 5, dpi = 300)
+    ggsave(file.path(FIG_OTHER, "known_TF_module_local_centrality.png"), width = 8, height = 5, dpi = 300)
   }
 }
 
@@ -704,21 +738,21 @@ for (tf in validation_tfs) {
     cat("  ChEA3:", tf, "(", src, ",", length(tgts), "targets )\n")
     res_c <- chea3_query(tgts, paste0(tf, "_", src))
     if (is.null(res_c)) next
-
+    
     lib <- if (!is.null(res_c[["Integrated--meanRank"]]))
       res_c[["Integrated--meanRank"]] else res_c[[1]]
     if (is.null(lib) || !"TF" %in% colnames(lib)) next
     lib$TF <- toupper(as.character(lib$TF))
     sr <- which(lib$TF == toupper(tf))
     self_rank <- if (length(sr) == 0) NA_integer_ else sr[1]
-
+    
     enc <- res_c[["ENCODE--ChIP-seq"]]
     enc_rank <- NA_integer_
     if (!is.null(enc) && "TF" %in% colnames(enc)) {
       er <- which(toupper(as.character(enc$TF)) == toupper(tf))
       enc_rank <- if (length(er) == 0) NA_integer_ else er[1]
     }
-
+    
     chea3_results[[paste0(tf, "_", src)]] <- data.frame(
       TF = tf, Source = src, N_targets = length(tgts),
       Self_rank_integrated = self_rank, N_TFs_returned = nrow(lib),
@@ -735,8 +769,8 @@ if (length(chea3_results) > 0) {
   cat("\nTop 10 (integrated):",
       sum(chea3_df$Self_rank_integrated <= 10, na.rm = TRUE), "/",
       nrow(chea3_df), "\n")
-  write.csv(chea3_df, "ChEA3_validation_results.csv", row.names = FALSE)
-
+  write.csv(chea3_df, file.path(RESULTS_VALID, "ChEA3_validation_results.csv"), row.names = FALSE)
+  
   # ENCODE is direct binding evidence — reported separately. The
   # integrated rank pools libraries where co-occurrence effects can
   # understate true recovery.
@@ -744,7 +778,7 @@ if (length(chea3_results) > 0) {
   encode_hits <- chea3_df %>% filter(!is.na(Self_rank_ENCODE)) %>%
     arrange(Self_rank_ENCODE) %>%
     dplyr::select(TF, Source, N_targets, Self_rank_ENCODE, Self_rank_integrated)
-
+  
   if (nrow(encode_hits) > 0) {
     print(as.data.frame(encode_hits))
     cat("\nENCODE self-rank <= 10:",
@@ -752,8 +786,8 @@ if (length(chea3_results) > 0) {
     cat("ENCODE self-rank <= 25:",
         sum(encode_hits$Self_rank_ENCODE <= 25), "/", nrow(encode_hits), "\n")
     cat("TFs with ENCODE coverage:", nrow(encode_hits), "/", nrow(chea3_df), "\n")
-    write.csv(encode_hits, "ChEA3_ENCODE_selfrecovery.csv", row.names = FALSE)
-
+    write.csv(encode_hits, file.path(RESULTS_VALID, "ChEA3_ENCODE_selfrecovery.csv"), row.names = FALSE)
+    
     ggplot(encode_hits,
            aes(x = reorder(paste0(TF, " (", Source, ")"), -Self_rank_ENCODE),
                y = Self_rank_ENCODE, fill = Self_rank_ENCODE <= 10)) +
@@ -767,7 +801,7 @@ if (length(chea3_results) > 0) {
       theme_bw() +
       theme(plot.title = element_text(hjust = 0.5, face = "bold"),
             plot.subtitle = element_text(hjust = 0.5, size = 8))
-    ggsave("ChEA3_ENCODE_validation.png", width = 9, height = 6, dpi = 300)
+    ggsave(file.path(RESULTS_VALID, "ChEA3_ENCODE_validation.png"), width = 9, height = 6, dpi = 300)
     cat("\nReport ENCODE ranks as the validation claim.\n")
   }
 } else {
@@ -778,7 +812,7 @@ if (length(chea3_results) > 0) {
 # The universe includes TFs so that GENIE3 predictions (which are
 # largely TF-TF here) are testable rather than silently dropped.
 
-trrust_file <- "trrust_rawdata.human.tsv"
+trrust_file <- file.path(DATA_DIR, "trrust_rawdata.human.tsv")
 if (!file.exists(trrust_file)) {
   cat("\nDownloading TRRUST...\n")
   tryCatch(download.file(
@@ -792,12 +826,12 @@ if (file.exists(trrust_file)) {
                        stringsAsFactors = FALSE, quote = "",
                        col.names = c("TF", "Target", "Direction", "PMID"))
   cat("TRRUST interactions:", nrow(trrust), "\n")
-
+  
   universe_genes <- unique(as.character(
     c(edge_list_genie3$Target, edge_list_panda$Target,
       edge_list_genie3$TF, edge_list_panda$TF)))
   cat("Testing universe:", length(universe_genes), "genes\n")
-
+  
   cat("\n--- TRRUST coverage diagnostic ---\n")
   for (tf in intersect(validation_tfs, unique(trrust$TF))) {
     g_pred <- unique(get_tf_targets(tf, "GENIE3", top_n = 500))
@@ -808,7 +842,7 @@ if (file.exists(trrust_file)) {
                 length(intersect(g_pred, universe_genes)),
                 length(intersect(p_pred, universe_genes))))
   }
-
+  
   trrust_validation <- lapply(validation_tfs, function(tf) {
     curated <- unique(trrust$Target[trrust$TF == tf])
     curated_in_universe <- intersect(curated, universe_genes)
@@ -828,7 +862,7 @@ if (file.exists(trrust_file)) {
                  stringsAsFactors = FALSE)
     }))
   })
-
+  
   trrust_df <- do.call(rbind, trrust_validation)
   if (!is.null(trrust_df) && nrow(trrust_df) > 0) {
     trrust_df$FDR <- p.adjust(trrust_df$pvalue, method = "BH")
@@ -837,8 +871,8 @@ if (file.exists(trrust_file)) {
     print(as.data.frame(trrust_df))
     cat("\nSignificant (FDR<0.05):",
         sum(trrust_df$FDR < 0.05, na.rm = TRUE), "/", nrow(trrust_df), "\n")
-    write.csv(trrust_df, "TRRUST_validation_results.csv", row.names = FALSE)
-
+    write.csv(trrust_df, file.path(RESULTS_VALID, "TRRUST_validation_results.csv"), row.names = FALSE)
+    
     ggplot(trrust_df, aes(x = reorder(TF, Fold_enrich), y = Fold_enrich,
                           fill = FDR < 0.05)) +
       geom_bar(stat = "identity", position = "dodge") + coord_flip() +
@@ -852,7 +886,7 @@ if (file.exists(trrust_file)) {
       theme_bw() +
       theme(plot.title = element_text(hjust = 0.5, face = "bold"),
             plot.subtitle = element_text(hjust = 0.5))
-    ggsave("TRRUST_validation.png", width = 10, height = 6, dpi = 300)
+    ggsave(file.path(RESULTS_VALID, "TRRUST_validation.png"), width = 10, height = 6, dpi = 300)
   } else {
     cat("No TF had enough curated targets for testing.\n")
   }
@@ -899,5 +933,5 @@ cat("5. In silico validation shows inferred edges recover known binding\n")
 cat("   above chance. It does not establish causality in FXS and is not\n")
 cat("   equivalent to experimental confirmation.\n")
 
-save.image("checkpoint_step19.RData")
+save.image(file.path(CHECKPOINTS_DIR, "checkpoint_step19.RData"))
 cat("\n=== PIPELINE COMPLETE ===\n")

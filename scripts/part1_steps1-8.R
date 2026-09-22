@@ -38,7 +38,41 @@ library(GENIE3)
 library(pandaR)
 library(igraph)
 
+# ------------------------------------------------------------
+# PATHS  (relative to the repo root)
+# ------------------------------------------------------------
 setwd("~/Desktop/final report")
+
+DATA_DIR        <- "data"
+CHECKPOINTS_DIR <- "checkpoints"
+NETWORKS_DIR    <- "networks"
+
+RESULTS_ALPACA  <- file.path("results", "ALPACA")
+RESULTS_DE      <- file.path("results", "DE")
+RESULTS_GENIE3  <- file.path("results", "GENIE3")
+RESULTS_LIONESS <- file.path("results", "LIONESS")
+RESULTS_METH    <- file.path("results", "methylation")
+RESULTS_OTHER   <- file.path("results", "other")
+RESULTS_PANDA   <- file.path("results", "PANDA")
+RESULTS_VALID   <- file.path("results", "validation")
+
+FIG_ALPACA  <- file.path("figures", "ALPACA")
+FIG_DE      <- file.path("figures", "DE")
+FIG_GENIE3  <- file.path("figures", "GENIE3")
+FIG_LIONESS <- file.path("figures", "LIONESS")
+FIG_METH    <- file.path("figures", "methylation")
+FIG_OTHER   <- file.path("figures", "other")
+FIG_PANDA   <- file.path("figures", "PANDA")
+FIG_VALID   <- file.path("figures", "validation")
+
+# make sure every output folder exists
+for (d in c(DATA_DIR, CHECKPOINTS_DIR, NETWORKS_DIR,
+            RESULTS_ALPACA, RESULTS_DE, RESULTS_GENIE3, RESULTS_LIONESS,
+            RESULTS_METH, RESULTS_OTHER, RESULTS_PANDA, RESULTS_VALID,
+            FIG_ALPACA, FIG_DE, FIG_GENIE3, FIG_LIONESS, FIG_METH,
+            FIG_OTHER, FIG_PANDA, FIG_VALID)) {
+  if (!dir.exists(d)) dir.create(d, recursive = TRUE)
+}
 
 # ------------------------------------------------------------
 # CONFIG (shared across all three parts)
@@ -49,7 +83,7 @@ N_CORES        <- 2          # lowered: forking multiplies memory use
 set.seed(42)
 known_tf <- c("SP1", "NRF1", "TFAP2A", "REST", "SIX3", "FOXG1")
 
-annot  <- read.delim(gzfile("Human.GRCh38.p13.annot.tsv.gz"), header = TRUE,
+annot  <- read.delim(gzfile(file.path(DATA_DIR, "Human.GRCh38.p13.annot.tsv.gz")), header = TRUE,
                      quote = "", check.names = FALSE, stringsAsFactors = FALSE)
 id2sym <- setNames(annot$Symbol, as.character(annot$GeneID))
 cat("Annotation rows:", nrow(annot), "\n")
@@ -58,7 +92,7 @@ cat("Annotation rows:", nrow(annot), "\n")
 # STEP 1 — LOAD PRIMARY COUNT MATRIX (GSE146339)
 # ============================================================
 
-counts_raw <- read.delim(gzfile("GSE146339_raw_counts_GRCh38.p13_NCBI.tsv.gz"),
+counts_raw <- read.delim(gzfile(file.path(DATA_DIR, "GSE146339_raw_counts_GRCh38.p13_NCBI.tsv.gz")),
                          header = TRUE, check.names = FALSE,
                          stringsAsFactors = FALSE)
 stopifnot(colnames(counts_raw)[1] == "GeneID")
@@ -135,7 +169,7 @@ cat("FXS:", sum(condition == "FXS"),
 
 vsd <- vst(dds, blind = TRUE)
 expr_normalized <- assay(vsd)
-write.csv(expr_normalized, "GSE146339_VST_normalized.csv")
+write.csv(expr_normalized, file.path(DATA_DIR, "GSE146339_VST_normalized.csv"))
 
 pca_data <- prcomp(t(expr_normalized))
 pct_var  <- round(100 * pca_data$sdev^2 / sum(pca_data$sdev^2), 1)
@@ -154,7 +188,7 @@ ggplot(pca_df, aes(x = PC1, y = PC2, color = condition,
   theme_bw() +
   theme(plot.title    = element_text(hjust = 0.5, face = "bold"),
         plot.subtitle = element_text(hjust = 0.5))
-ggsave("PCA_GSE146339.png", width = 10, height = 7, dpi = 300)
+ggsave(file.path(FIG_DE, "PCA_GSE146339.png"), width = 10, height = 7, dpi = 300)
 
 cat("\nStep 3 done. PC1 separating D28 from D105 is expected.\n")
 
@@ -173,12 +207,12 @@ summary(res, alpha = 0.05)
 res_df$GeneID <- rownames(res_df)
 res_df$Symbol <- id2sym[res_df$GeneID]
 cat("Genes with a symbol:", sum(!is.na(res_df$Symbol)), "/", nrow(res_df), "\n")
-write.csv(res_df, "DESeq2_FXS_vs_Control_all.csv")
+write.csv(res_df, file.path(RESULTS_DE, "DESeq2_FXS_vs_Control_all.csv"))
 
 sig_degs <- res_df %>%
   filter(!is.na(padj), padj < 0.05, abs(log2FoldChange) > 1) %>%
   arrange(padj)
-write.csv(sig_degs, "DESeq2_significant_DEGs.csv")
+write.csv(sig_degs, file.path(RESULTS_DE, "DESeq2_significant_DEGs.csv"))
 
 cat("\nSignificant DEGs:", nrow(sig_degs), "\n")
 cat("Upregulated:",   sum(sig_degs$log2FoldChange > 0), "\n")
@@ -226,7 +260,7 @@ ggplot(res_plot, aes(x = log2FoldChange, y = -log10(padj),
   theme_bw() +
   theme(plot.title    = element_text(hjust = 0.5, face = "bold"),
         plot.subtitle = element_text(hjust = 0.5))
-ggsave("volcano_plot_FXS_vs_Control.png", width = 10, height = 7, dpi = 300)
+ggsave(file.path(FIG_DE, "volcano_plot_FXS_vs_Control.png"), width = 10, height = 7, dpi = 300)
 
 if (nrow(sig_degs) >= 10) {
   top_ids  <- head(rownames(sig_degs), min(50, nrow(sig_degs)))
@@ -238,7 +272,7 @@ if (nrow(sig_degs) >= 10) {
                                        row.names = colnames(heat_mat)),
            scale = "row", show_rownames = TRUE, show_colnames = TRUE,
            main = "Top DEGs — FXS vs Control",
-           filename = "heatmap_top_DEGs.png", width = 10, height = 12)
+           filename = file.path(FIG_DE, "heatmap_top_DEGs.png"), width = 10, height = 12)
 } else {
   cat("\nFewer than 10 DEGs — heatmap skipped.\n")
 }
@@ -251,8 +285,8 @@ cat("\nStep 4 done — proceed only if FMR1 passed.\n")
 
 # ---- 5A: DIFFERENTIAL METHYLATION ----
 
-meth_matrix <- read.csv("GSE41273_methylation_matrix.csv", row.names = 1)
-meta_meth   <- read.csv("GSE41273_metadata.csv", row.names = 1)
+meth_matrix <- read.csv(file.path(DATA_DIR, "GSE41273_methylation_matrix.csv"), row.names = 1)
+meta_meth   <- read.csv(file.path(DATA_DIR, "GSE41273_metadata.csv"), row.names = 1)
 cat("\nMethylation matrix dimensions:", dim(meth_matrix), "\n")
 
 meth_condition <- factor(ifelse(
@@ -273,7 +307,7 @@ dmp_results <- dmp_results[order(dmp_results$adj.P.Val), ]
 
 cat("\nDMPs at FDR < 0.05:",
     sum(dmp_results$adj.P.Val < 0.05, na.rm = TRUE), "\n")
-write.csv(dmp_results, "DMP_FXS_vs_Control_all.csv")
+write.csv(dmp_results, file.path(RESULTS_METH, "DMP_FXS_vs_Control_all.csv"))
 
 sig_dmps <- dmp_results %>%
   filter(adj.P.Val < 0.05, abs(logFC) > 0.1) %>%
@@ -282,7 +316,7 @@ sig_dmps <- dmp_results %>%
 cat("Significant DMPs (FDR<0.05, |logFC|>0.1):", nrow(sig_dmps), "\n")
 cat("Hypermethylated:", sum(sig_dmps$logFC > 0), "\n")
 cat("Hypomethylated:",  sum(sig_dmps$logFC < 0), "\n")
-write.csv(sig_dmps, "DMP_FXS_vs_Control_significant.csv")
+write.csv(sig_dmps, file.path(RESULTS_METH, "DMP_FXS_vs_Control_significant.csv"))
 
 # ---- 5B: DMP -> GENE MAPPING ----
 
@@ -318,7 +352,7 @@ gene_meth_status <- dmp_merge %>%
 
 cat("\nGene methylation status:\n"); print(table(gene_meth_status$meth_status))
 print(gene_meth_status)
-write.csv(gene_meth_status, "methylation_gene_summary.csv", row.names = FALSE)
+write.csv(gene_meth_status, file.path(RESULTS_METH, "methylation_gene_summary.csv"), row.names = FALSE)
 
 fmr1_meth <- gene_meth_status[gene_meth_status$Gene == "FMR1", ]
 if (nrow(fmr1_meth) > 0) {
@@ -342,7 +376,7 @@ ggplot(gene_meth_status,
   theme_bw() +
   theme(plot.title    = element_text(hjust = 0.5, face = "bold"),
         plot.subtitle = element_text(hjust = 0.5))
-ggsave("methylation_gene_summary.png", width = 8, height = 6, dpi = 300)
+ggsave(file.path(FIG_METH, "methylation_gene_summary.png"), width = 8, height = 6, dpi = 300)
 
 # ---- 5C: CONTINUOUS PROMOTER METHYLATION ----
 
@@ -376,7 +410,7 @@ gene_beta <- probe2gene_all %>%
 cat("Genes with promoter methylation data:", nrow(gene_beta), "\n")
 cat("Promoter beta range:", round(range(gene_beta$promoter_beta), 3), "\n")
 cat("Median promoter beta:", round(median(gene_beta$promoter_beta), 3), "\n")
-write.csv(gene_beta, "promoter_methylation_by_gene.csv", row.names = FALSE)
+write.csv(gene_beta, file.path(RESULTS_METH, "promoter_methylation_by_gene.csv"), row.names = FALSE)
 
 ggplot(gene_beta, aes(x = promoter_beta)) +
   geom_histogram(bins = 60, fill = "#3498DB", color = "white") +
@@ -389,7 +423,7 @@ ggplot(gene_beta, aes(x = promoter_beta)) +
   theme_bw() +
   theme(plot.title    = element_text(hjust = 0.5, face = "bold"),
         plot.subtitle = element_text(hjust = 0.5))
-ggsave("promoter_methylation_distribution.png", width = 8, height = 5, dpi = 300)
+ggsave(file.path(FIG_METH, "promoter_methylation_distribution.png"), width = 8, height = 5, dpi = 300)
 
 cat("\nStep 5 done\n")
 
@@ -397,7 +431,7 @@ cat("\nStep 5 done\n")
 # STEP 6 — TF LIST PREPARATION + FMR1 DIAGNOSTIC
 # ============================================================
 
-tf_list <- readLines("tf_list.txt")
+tf_list <- readLines(file.path(DATA_DIR, "tf_list.txt"))
 tf_list <- unique(trimws(tf_list[tf_list != ""]))
 cat("\nTF list size:", length(tf_list), "\n")
 
@@ -427,7 +461,7 @@ fmr1_genes <- res_df[which(res_df$Symbol %in%
                              c("FMR1", "ASFMR1", "FMR1-AS1")), ]
 if (nrow(fmr1_genes) > 0) {
   print(fmr1_genes[, c("Symbol","baseMean","log2FoldChange","pvalue","padj")])
-  write.csv(fmr1_genes, "FMR1_diagnostic.csv", row.names = FALSE)
+  write.csv(fmr1_genes, file.path(RESULTS_METH, "FMR1_diagnostic.csv"), row.names = FALSE)
 } else {
   cat("Neither gene present after filtering.\n")
 }
@@ -465,7 +499,7 @@ edge_list_genie3 <- edge_list_genie3[order(edge_list_genie3$Weight,
 
 cat("Total edges:", nrow(edge_list_genie3), "\n")
 print(head(edge_list_genie3, 10))
-write.csv(edge_list_genie3, "GENIE3_edge_list.csv", row.names = FALSE)
+write.csv(edge_list_genie3, file.path(RESULTS_GENIE3, "GENIE3_edge_list.csv"), row.names = FALSE)
 
 cat("Known FXS TFs found:",
     paste(intersect(known_tf, unique(edge_list_genie3$TF)), collapse = ", "), "\n")
@@ -478,7 +512,7 @@ cat("\nStep 7 done\n")
 # ---- 8A: STRING PPI ----
 
 cat("\nLoading STRING PPI...\n")
-ppi_raw <- read.table("9606.protein.links.v12.0.txt", header = TRUE, sep = " ")
+ppi_raw <- read.table(file.path(DATA_DIR, "9606.protein.links.v12.0.txt"), header = TRUE, sep = " ")
 ppi_filtered <- ppi_raw[ppi_raw$combined_score >= 700, ]
 cat("High confidence PPI edges:", nrow(ppi_filtered), "\n")
 
@@ -655,7 +689,7 @@ cat("Edges effectively modulated:",
             100 * mean(abs(motif_edgelist_weighted$meth_weight - 1) > 0.05)))
 
 write.csv(motif_edgelist_weighted,
-          "motif_edgelist_methylation_weighted.csv", row.names = FALSE)
+          file.path(RESULTS_METH, "motif_edgelist_methylation_weighted.csv"), row.names = FALSE)
 
 motif_edgelist_original <- motif_edgelist
 motif_edgelist <- motif_edgelist_weighted %>% dplyr::select(TF, Gene, Score)
@@ -670,7 +704,7 @@ ggplot(motif_edgelist_weighted, aes(x = meth_weight)) +
   theme_bw() +
   theme(plot.title    = element_text(hjust = 0.5, face = "bold"),
         plot.subtitle = element_text(hjust = 0.5))
-ggsave("methylation_weight_distribution.png", width = 8, height = 5, dpi = 300)
+ggsave(file.path(FIG_METH, "methylation_weight_distribution.png"), width = 8, height = 5, dpi = 300)
 
 set.seed(1)
 meth_scatter <- motif_edgelist_weighted[
@@ -686,7 +720,7 @@ ggplot(meth_scatter, aes(x = Score_original, y = Score, color = promoter_beta)) 
   theme_bw() +
   theme(plot.title    = element_text(hjust = 0.5, face = "bold"),
         plot.subtitle = element_text(hjust = 0.5))
-ggsave("methylation_weighting_effect.png", width = 8, height = 6, dpi = 300)
+ggsave(file.path(FIG_METH, "methylation_weighting_effect.png"), width = 8, height = 6, dpi = 300)
 
 # ---- 8C: EXPRESSION MATRIX ----
 
@@ -758,7 +792,7 @@ cat("PANDA edges with Score > 0:", nrow(edge_list_panda), "\n")
 cat("Unique TFs:", length(unique(edge_list_panda$TF)),
     "| unique targets:", length(unique(edge_list_panda$Target)), "\n")
 print(head(edge_list_panda, 10))
-write.csv(edge_list_panda, "PANDA_edge_list.csv", row.names = FALSE)
+write.csv(edge_list_panda, file.path(RESULTS_PANDA, "PANDA_edge_list.csv"), row.names = FALSE)
 
 cat("\nKnown FXS TFs recovered by PANDA:",
     paste(intersect(known_tf, unique(edge_list_panda$TF)), collapse = ", "), "\n")
@@ -773,6 +807,6 @@ rm(counts_raw, count_matrix, count_matrix_filtered, ppi_filtered,
    anno_450k, meth_matrix, dmp_results, res_plot)
 gc(verbose = FALSE)
 
-save.image("checkpoint_step8.RData")
+save.image(file.path(CHECKPOINTS_DIR, "checkpoint_step8.RData"))
 cat("\n=== PART 1 COMPLETE — checkpoint_step8.RData saved ===\n")
 cat("Restart R, then run part2_steps9-16.R\n")

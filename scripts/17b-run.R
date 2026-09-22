@@ -10,8 +10,42 @@ library(igraph)
 library(dplyr)
 library(ggplot2)
 
+# ------------------------------------------------------------
+# PATHS  (relative to the repo root)
+# ------------------------------------------------------------
 setwd("~/Desktop/final report")
-load("checkpoint_step16.RData")
+
+DATA_DIR        <- "data"
+CHECKPOINTS_DIR <- "checkpoints"
+NETWORKS_DIR    <- "networks"
+
+RESULTS_ALPACA  <- file.path("results", "ALPACA")
+RESULTS_DE      <- file.path("results", "DE")
+RESULTS_GENIE3  <- file.path("results", "GENIE3")
+RESULTS_LIONESS <- file.path("results", "LIONESS")
+RESULTS_METH    <- file.path("results", "methylation")
+RESULTS_OTHER   <- file.path("results", "other")
+RESULTS_PANDA   <- file.path("results", "PANDA")
+RESULTS_VALID   <- file.path("results", "validation")
+
+FIG_ALPACA  <- file.path("figures", "ALPACA")
+FIG_DE      <- file.path("figures", "DE")
+FIG_GENIE3  <- file.path("figures", "GENIE3")
+FIG_LIONESS <- file.path("figures", "LIONESS")
+FIG_METH    <- file.path("figures", "methylation")
+FIG_OTHER   <- file.path("figures", "other")
+FIG_PANDA   <- file.path("figures", "PANDA")
+FIG_VALID   <- file.path("figures", "validation")
+
+# make sure every output folder exists
+for (d in c(DATA_DIR, CHECKPOINTS_DIR, NETWORKS_DIR,
+            RESULTS_ALPACA, RESULTS_DE, RESULTS_GENIE3, RESULTS_LIONESS,
+            RESULTS_METH, RESULTS_OTHER, RESULTS_PANDA, RESULTS_VALID,
+            FIG_ALPACA, FIG_DE, FIG_GENIE3, FIG_LIONESS, FIG_METH,
+            FIG_OTHER, FIG_PANDA, FIG_VALID)) {
+  if (!dir.exists(d)) dir.create(d, recursive = TRUE)
+}
+load(file.path(CHECKPOINTS_DIR, "checkpoint_step16.RData"))
 cat("Checkpoint loaded. Objects:", length(ls()), "\n")
 
 N_PERM_PANDA   <- 20
@@ -96,10 +130,10 @@ cat("INTERPRET: if the null q95 sits close to the observed 90th\n")
 cat("percentile, PANDA is largely reproducing its prior rather than\n")
 cat("adding expression-driven signal. Report this in Limitations.\n")
 
-write.csv(edge_list_panda_sig, "PANDA_edge_list_with_null.csv", row.names = FALSE)
+write.csv(edge_list_panda_sig, file.path(RESULTS_PANDA, "PANDA_edge_list_with_null.csv"), row.names = FALSE)
 
 save(edge_list_panda_sig, panda_null_pool, panda_null_q95, panda_emp_p,
-     file = "checkpoint_17B_only.RData")
+     file = file.path(CHECKPOINTS_DIR, "checkpoint_17B_only.RData"))
 cat("Saved checkpoint_17B_only.RData\n")
 
 # ---- Plot ----
@@ -123,6 +157,6 @@ ggplot(panda_cmp, aes(x = Score, fill = Source)) +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5, face = "bold"),
         plot.subtitle = element_text(hjust = 0.5))
-ggsave("PANDA_null_distribution.png", width = 9, height = 6, dpi = 300)
+ggsave(file.path(FIG_PANDA, "PANDA_null_distribution.png"), width = 9, height = 6, dpi = 300)
 
 cat("\n=== STEP 17B COMPLETE ===\n")
