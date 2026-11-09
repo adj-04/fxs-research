@@ -280,17 +280,29 @@ if (length(alpaca_null_scores) >= 5) {
   cat("ALPACA nodes with empirical FDR < 0.05:",
       sum(alpaca_sig$emp_FDR < 0.05, na.rm = TRUE), "\n")
   
+  # v5: 100,000 draws (was 1,000). With 1,000 draws the smallest module p
+  # was 0.000999, so with ~250 modules BH could never go below ~0.25 — the
+  # same resolution trap as the v4 edge nulls. Drawn in chunks for memory.
+  N_MODULE_DRAWS <- env_num("FXS_N_MODULE_DRAWS", 1e5)
+  null_vals <- null_all$Score[is.finite(null_all$Score)]
+  set.seed(4242)
+  module_perm_p <- function(obs, k, n_draw = N_MODULE_DRAWS, chunk = 1e4) {
+    hits <- 0; done <- 0
+    while (done < n_draw) {
+      m <- min(chunk, n_draw - done)
+      draws <- matrix(sample(null_vals, m * k, replace = TRUE), nrow = m)
+      hits <- hits + sum(rowMeans(draws) >= obs)
+      done <- done + m
+    }
+    (hits + 1) / (n_draw + 1)
+  }
   module_sig <- alpaca_sig %>%
     group_by(Module) %>%
     summarise(n_nodes = n(), mean_score = mean(Score, na.rm = TRUE),
               mean_null = mean(null_mean, na.rm = TRUE),
               n_sig_nodes = sum(emp_p < 0.05, na.rm = TRUE),
-              module_emp_p = {
-                obs <- mean(Score, na.rm = TRUE)
-                nulls <- replicate(1000, mean(sample(null_all$Score, n()),
-                                              na.rm = TRUE))
-                (sum(nulls >= obs) + 1) / 1001
-              }, .groups = "drop") %>%
+              module_emp_p = module_perm_p(mean(Score, na.rm = TRUE), n()),
+              .groups = "drop") %>%
     mutate(module_FDR = p.adjust(module_emp_p, method = "BH")) %>%
     arrange(module_emp_p)
   
@@ -837,13 +849,14 @@ cat("   false positives.\n")
 cat("2. Methylation is from a third tissue (blood) and a third cohort.\n")
 cat("3. Validation cohort: NCBI reprocessed 20 of 26 submitted samples;\n")
 cat("   FXS_426_NPC is absent. Two donors (FXS_421, NL_18) each\n")
-cat("   contribute two cell types, so effective n is below the line\n")
-cat("   count.\n")
-cat("4. LIONESS has no covariate mechanism, so developmental timepoint\n")
-cat("   is unadjusted in the sample-specific networks.\n")
+cat("   contribute two cell types; donor-blocked limma is reported as\n")
+cat("   a sensitivity analysis (validation_donor_sensitivity.csv).\n")
+cat("4. Timepoint is removed additively before network inference and\n")
+cat("   modelled per edge on LIONESS output; FXS effects that differ by\n")
+cat("   timepoint (interaction) are not modelled.\n")
 cat("5. In silico validation shows inferred edges recover known binding\n")
 cat("   above chance. It does not establish causality in FXS and is not\n")
 cat("   equivalent to experimental confirmation.\n")
 
 save.image(file.path(CHECKPOINTS_DIR, "checkpoint_step19.RData"))
-cat("\n=== PIPELINE COMPLETE ===\n")
+cat("\n=== PART 3 COMPLETE — run 17b-run.R, then part4_steps20-22.R ===\n")
