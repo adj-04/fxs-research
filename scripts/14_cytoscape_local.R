@@ -11,7 +11,10 @@
 #      and unzip it, or sync the Drive folder (fxs-research-run).
 #   2. Start Cytoscape (3.10+). Cap its memory in Cytoscape.vmoptions,
 #      e.g. -Xmx3g, so it does not compete with R for RAM.
-#   3. In RStudio: setwd() to the unzipped folder, then source this file.
+#   3. In RStudio: setwd("~/fxs-research") (v5 results are committed there),
+#      or to the unzipped results folder, then source this file.
+#
+# Nodes in FDR-significant ALPACA modules get a thick gold border.
 # ============================================================
 
 library(RCy3)
@@ -29,11 +32,29 @@ if (!file.exists(nodes_f) || !file.exists(edges_f))
 
 node_table <- read.csv(nodes_f, stringsAsFactors = FALSE) %>%
   mutate(id = as.character(id), label = id, Module = as.character(Module))
-edge_table <- read.csv(edges_f, stringsAsFactors = FALSE) %>%
+edge_all <- read.csv(edges_f, stringsAsFactors = FALSE) %>%
   rename(source = TF, target = Gene) %>%
   filter(source %in% node_table$id, target %in% node_table$id) %>%
   mutate(interaction = "regulates")
-cat("Nodes:", nrow(node_table), "| edges:", nrow(edge_table), "\n")
+
+# The top modules hold ~300k edges — too many to lay out or read. Keep:
+#   * every edge inside the FDR-significant module(s) (module 4 in v5), and
+#   * the strongest remaining edges, up to MAX_EDGES in total.
+MAX_EDGES <- as.numeric(Sys.getenv("FXS_CYTO_MAX_EDGES", 3000))
+sig_f <- file.path("results", "ALPACA", "ALPACA_module_significance.csv")
+sig_modules <- if (file.exists(sig_f)) {
+  m <- read.csv(sig_f); as.character(m$Module[m$module_FDR < 0.05])
+} else character(0)
+sig_nodes <- node_table$id[node_table$Module %in% sig_modules]
+keep_sig  <- edge_all %>% filter(source %in% sig_nodes | target %in% sig_nodes)
+keep_top  <- edge_all %>% anti_join(keep_sig, by = c("source", "target")) %>%
+  arrange(desc(Score)) %>% head(max(0, MAX_EDGES - nrow(keep_sig)))
+edge_table <- bind_rows(keep_sig, keep_top)
+node_table <- node_table %>% filter(id %in% c(edge_table$source, edge_table$target))
+node_table$Significant_module <- ifelse(node_table$Module %in% sig_modules, "yes", "no")
+cat("Significant module(s):", if (length(sig_modules)) paste(sig_modules, collapse = ", ") else "none",
+    "\nEdges kept:", nrow(edge_table), "of", nrow(edge_all),
+    "| nodes:", nrow(node_table), "\n")
 
 cytoscapePing()
 cat("Cytoscape version:", cytoscapeVersionInfo()[["cytoscapeVersion"]], "\n")
@@ -59,6 +80,10 @@ setEdgeLineWidthMapping("Score",
 
 setNodeBorderColorDefault("#FFFFFF", style.name = style_name)
 setNodeBorderWidthDefault(2, style.name = style_name)
+setNodeBorderColorMapping("Significant_module", c("yes", "no"), c("#F1C40F", "#FFFFFF"),
+                          mapping.type = "d", style.name = style_name)
+setNodeBorderWidthMapping("Significant_module", c("yes", "no"), c(8, 2),
+                          mapping.type = "d", style.name = style_name)
 setNodeFontSizeDefault(20, style.name = style_name)
 setNodeLabelColorDefault("#000000", style.name = style_name)
 setEdgeOpacityDefault(60, style.name = style_name)
