@@ -1,0 +1,11 @@
+"Metric","Value"
+"Null runs",20
+"Null edges pooled",58054500
+"Null q95",3.547
+"Observed 90th pct",3.796
+"Smallest attainable p (per-edge, v4)",0.0476
+"Smallest attainable p (pooled, v5)",1.72e-08
+"Edges pooled p < 0.05",150070
+"Edges pooled FDR < 0.05",0
+"Edges per-edge FDR < 0.05",0
+"Edges above null q95",150070

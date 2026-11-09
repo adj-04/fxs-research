@@ -1,0 +1,125 @@
+Loading required package: Biobase
+Loading required package: BiocGenerics
+Loading required package: generics
+
+Attaching package: ‘generics’
+
+The following objects are masked from ‘package:base’:
+
+    as.difftime, as.factor, as.ordered, intersect, is.element, setdiff,
+    setequal, union
+
+
+Attaching package: ‘BiocGenerics’
+
+The following objects are masked from ‘package:stats’:
+
+    IQR, mad, sd, var, xtabs
+
+The following objects are masked from ‘package:base’:
+
+    anyDuplicated, aperm, append, as.data.frame, basename, cbind,
+    colnames, dirname, do.call, duplicated, eval, evalq, Filter, Find,
+    get, grep, grepl, is.unsorted, lapply, Map, mapply, match, mget,
+    order, paste, pmax, pmax.int, pmin, pmin.int, Position, rank,
+    rbind, Reduce, rownames, sapply, saveRDS, table, tapply, unique,
+    unsplit, which.max, which.min
+
+Welcome to Bioconductor
+
+    Vignettes contain introductory material; view with
+    'browseVignettes()'. To cite Bioconductor, see
+    'citation("Biobase")', and for packages 'citation("pkgname")'.
+
+
+Attaching package: ‘igraph’
+
+The following objects are masked from ‘package:BiocGenerics’:
+
+    normalize, path, union
+
+The following objects are masked from ‘package:generics’:
+
+    components, union
+
+The following objects are masked from ‘package:stats’:
+
+    decompose, spectrum
+
+The following object is masked from ‘package:base’:
+
+    union
+
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:igraph’:
+
+    as_data_frame, groups, union
+
+The following object is masked from ‘package:Biobase’:
+
+    combine
+
+The following objects are masked from ‘package:BiocGenerics’:
+
+    combine, intersect, setdiff, setequal, union
+
+The following object is masked from ‘package:generics’:
+
+    explain
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+FXS_ROOT: /content/drive/MyDrive/fxs-research-run 
+FXS_REPO: /content/fxs-research 
+Config loaded | cores: 2 | target selection: variance | GENIE3 targets: 5000 | timepoint-adjusted networks: TRUE | cell-type-adjusted methylation: TRUE 
+
+FXS_ROOT: /content/drive/MyDrive/fxs-research-run 
+FXS_REPO: /content/fxs-research 
+Config loaded | cores: 2 | target selection: variance | GENIE3 targets: 5000 | timepoint-adjusted networks: TRUE | cell-type-adjusted methylation: TRUE 
+Checkpoint loaded.
+  PANDA null run 1 / 20 | elapsed 0 min
+  PANDA null run 2 / 20 | elapsed 5 min
+  PANDA null run 3 / 20 | elapsed 9.7 min
+  PANDA null run 4 / 20 | elapsed 14.6 min
+  PANDA null run 5 / 20 | elapsed 19.2 min
+  PANDA null run 6 / 20 | elapsed 23.8 min
+  PANDA null run 7 / 20 | elapsed 28.2 min
+  PANDA null run 8 / 20 | elapsed 32.7 min
+  PANDA null run 9 / 20 | elapsed 36.8 min
+  PANDA null run 10 / 20 | elapsed 40.5 min
+  PANDA null run 11 / 20 | elapsed 44.2 min
+  PANDA null run 12 / 20 | elapsed 48 min
+  PANDA null run 13 / 20 | elapsed 51.5 min
+  PANDA null run 14 / 20 | elapsed 55.2 min
+  PANDA null run 15 / 20 | elapsed 58.8 min
+  PANDA null run 16 / 20 | elapsed 62.4 min
+  PANDA null run 17 / 20 | elapsed 65.9 min
+  PANDA null run 18 / 20 | elapsed 69.5 min
+  PANDA null run 19 / 20 | elapsed 73 min
+  PANDA null run 20 / 20 | elapsed 76.5 min
+There were 40 warnings (use warnings() to see them)
+PANDA null complete: 20 successful runs
+                                 Metric       Value
+1                             Null runs 2.00000e+01
+2                     Null edges pooled 5.80545e+07
+3                              Null q95 3.54700e+00
+4                     Observed 90th pct 3.79600e+00
+5  Smallest attainable p (per-edge, v4) 4.76000e-02
+6    Smallest attainable p (pooled, v5) 1.72000e-08
+7                 Edges pooled p < 0.05 1.50070e+05
+8               Edges pooled FDR < 0.05 0.00000e+00
+9             Edges per-edge FDR < 0.05 0.00000e+00
+10                 Edges above null q95 1.50070e+05
+Warning message:
+In grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y,  :
+  for 'PANDA Edge Scores — Observed vs Randomized Prior' in 'mbcsToSbcs': - substituted for — (U+2014)
+
+=== STEP 17B COMPLETE ===

@@ -1,0 +1,613 @@
+Loading required package: S4Vectors
+Loading required package: stats4
+Loading required package: BiocGenerics
+Loading required package: generics
+
+Attaching package: ‘generics’
+
+The following objects are masked from ‘package:base’:
+
+    as.difftime, as.factor, as.ordered, intersect, is.element, setdiff,
+    setequal, union
+
+
+Attaching package: ‘BiocGenerics’
+
+The following objects are masked from ‘package:stats’:
+
+    IQR, mad, sd, var, xtabs
+
+The following objects are masked from ‘package:base’:
+
+    anyDuplicated, aperm, append, as.data.frame, basename, cbind,
+    colnames, dirname, do.call, duplicated, eval, evalq, Filter, Find,
+    get, grep, grepl, is.unsorted, lapply, Map, mapply, match, mget,
+    order, paste, pmax, pmax.int, pmin, pmin.int, Position, rank,
+    rbind, Reduce, rownames, sapply, saveRDS, table, tapply, unique,
+    unsplit, which.max, which.min
+
+
+Attaching package: ‘S4Vectors’
+
+The following object is masked from ‘package:utils’:
+
+    findMatches
+
+The following objects are masked from ‘package:base’:
+
+    expand.grid, I, unname
+
+Loading required package: IRanges
+Loading required package: GenomicRanges
+Loading required package: Seqinfo
+Loading required package: SummarizedExperiment
+Loading required package: MatrixGenerics
+Loading required package: matrixStats
+
+Attaching package: ‘MatrixGenerics’
+
+The following objects are masked from ‘package:matrixStats’:
+
+    colAlls, colAnyNAs, colAnys, colAvgsPerRowSet, colCollapse,
+    colCounts, colCummaxs, colCummins, colCumprods, colCumsums,
+    colDiffs, colIQRDiffs, colIQRs, colLogSumExps, colMadDiffs,
+    colMads, colMaxs, colMeans2, colMedians, colMins, colOrderStats,
+    colProds, colQuantiles, colRanges, colRanks, colSdDiffs, colSds,
+    colSums2, colTabulates, colVarDiffs, colVars, colWeightedMads,
+    colWeightedMeans, colWeightedMedians, colWeightedSds,
+    colWeightedVars, rowAlls, rowAnyNAs, rowAnys, rowAvgsPerColSet,
+    rowCollapse, rowCounts, rowCummaxs, rowCummins, rowCumprods,
+    rowCumsums, rowDiffs, rowIQRDiffs, rowIQRs, rowLogSumExps,
+    rowMadDiffs, rowMads, rowMaxs, rowMeans2, rowMedians, rowMins,
+    rowOrderStats, rowProds, rowQuantiles, rowRanges, rowRanks,
+    rowSdDiffs, rowSds, rowSums2, rowTabulates, rowVarDiffs, rowVars,
+    rowWeightedMads, rowWeightedMeans, rowWeightedMedians,
+    rowWeightedSds, rowWeightedVars
+
+Loading required package: Biobase
+Welcome to Bioconductor
+
+    Vignettes contain introductory material; view with
+    'browseVignettes()'. To cite Bioconductor, see
+    'citation("Biobase")', and for packages 'citation("pkgname")'.
+
+
+Attaching package: ‘Biobase’
+
+The following object is masked from ‘package:MatrixGenerics’:
+
+    rowMedians
+
+The following objects are masked from ‘package:matrixStats’:
+
+    anyMissing, rowMedians
+
+── Attaching core tidyverse packages ──────────────────────── tidyverse 2.0.0 ──
+✔ dplyr     1.2.1     ✔ readr     2.2.0
+✔ forcats   1.0.1     ✔ stringr   1.6.0
+✔ ggplot2   4.0.3     ✔ tibble    3.3.1
+✔ lubridate 1.9.5     ✔ tidyr     1.3.2
+✔ purrr     1.2.2     
+── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
+✖ lubridate::%within%() masks IRanges::%within%()
+✖ dplyr::collapse()     masks IRanges::collapse()
+✖ dplyr::combine()      masks Biobase::combine(), BiocGenerics::combine()
+✖ dplyr::count()        masks matrixStats::count()
+✖ dplyr::desc()         masks IRanges::desc()
+✖ tidyr::expand()       masks S4Vectors::expand()
+✖ dplyr::filter()       masks stats::filter()
+✖ dplyr::first()        masks S4Vectors::first()
+✖ dplyr::lag()          masks stats::lag()
+✖ ggplot2::Position()   masks BiocGenerics::Position(), base::Position()
+✖ purrr::reduce()       masks GenomicRanges::reduce(), IRanges::reduce()
+✖ dplyr::rename()       masks S4Vectors::rename()
+✖ lubridate::second()   masks S4Vectors::second()
+✖ lubridate::second<-() masks S4Vectors::second<-()
+✖ dplyr::slice()        masks IRanges::slice()
+ℹ Use the conflicted package (<http://conflicted.r-lib.org/>) to force all conflicts to become errors
+
+Attaching package: ‘reshape2’
+
+The following object is masked from ‘package:tidyr’:
+
+    smiths
+
+
+Attaching package: ‘scales’
+
+The following object is masked from ‘package:purrr’:
+
+    discard
+
+The following object is masked from ‘package:readr’:
+
+    col_factor
+
+
+Attaching package: ‘limma’
+
+The following object is masked from ‘package:DESeq2’:
+
+    plotMA
+
+The following object is masked from ‘package:BiocGenerics’:
+
+    plotMA
+
+Loading required package: Biostrings
+Loading required package: XVector
+
+Attaching package: ‘XVector’
+
+The following object is masked from ‘package:purrr’:
+
+    compact
+
+
+Attaching package: ‘Biostrings’
+
+The following object is masked from ‘package:base’:
+
+    strsplit
+
+Loading required package: bumphunter
+Loading required package: foreach
+
+Attaching package: ‘foreach’
+
+The following objects are masked from ‘package:purrr’:
+
+    accumulate, when
+
+Loading required package: iterators
+Loading required package: parallel
+Loading required package: locfit
+locfit 1.5-9.12 	 2025-03-05
+
+Attaching package: ‘locfit’
+
+The following object is masked from ‘package:purrr’:
+
+    none
+
+Setting options('download.file.method.GEOquery'='auto')
+Setting options('GEOquery.inmemory.gpl'=FALSE)
+Loading required package: AnnotationDbi
+
+Attaching package: ‘AnnotationDbi’
+
+The following object is masked from ‘package:dplyr’:
+
+    select
+
+
+Loading required package: GenomeInfoDb
+Loading required package: BSgenome
+Loading required package: BiocIO
+Loading required package: rtracklayer
+Loading required package: GenomicFeatures
+
+Attaching package: ‘igraph’
+
+The following objects are masked from ‘package:rtracklayer’:
+
+    blocks, path
+
+The following object is masked from ‘package:BiocIO’:
+
+    path
+
+The following object is masked from ‘package:Biostrings’:
+
+    union
+
+The following object is masked from ‘package:XVector’:
+
+    path
+
+The following objects are masked from ‘package:lubridate’:
+
+    %--%, union
+
+The following objects are masked from ‘package:dplyr’:
+
+    as_data_frame, groups, union
+
+The following objects are masked from ‘package:purrr’:
+
+    compose, simplify
+
+The following object is masked from ‘package:tidyr’:
+
+    crossing
+
+The following object is masked from ‘package:tibble’:
+
+    as_data_frame
+
+The following object is masked from ‘package:GenomicRanges’:
+
+    union
+
+The following object is masked from ‘package:IRanges’:
+
+    union
+
+The following object is masked from ‘package:S4Vectors’:
+
+    union
+
+The following objects are masked from ‘package:BiocGenerics’:
+
+    normalize, path, union
+
+The following objects are masked from ‘package:generics’:
+
+    components, union
+
+The following objects are masked from ‘package:stats’:
+
+    decompose, spectrum
+
+The following object is masked from ‘package:base’:
+
+    union
+
+
+Attaching package: ‘data.table’
+
+The following objects are masked from ‘package:reshape2’:
+
+    dcast, melt
+
+The following objects are masked from ‘package:lubridate’:
+
+    hour, isoweek, isoyear, mday, minute, month, quarter, second, wday,
+    week, yday, year
+
+The following objects are masked from ‘package:dplyr’:
+
+    between, first, last
+
+The following object is masked from ‘package:purrr’:
+
+    transpose
+
+The following object is masked from ‘package:SummarizedExperiment’:
+
+    shift
+
+The following object is masked from ‘package:GenomicRanges’:
+
+    shift
+
+The following object is masked from ‘package:IRanges’:
+
+    shift
+
+The following objects are masked from ‘package:S4Vectors’:
+
+    first, second
+
+The following object is masked from ‘package:base’:
+
+    %notin%
+
+FXS_ROOT: /content/drive/MyDrive/fxs-research-run 
+FXS_REPO: /content/fxs-research 
+Config loaded | cores: 2 | target selection: variance | GENIE3 targets: 5000 | timepoint-adjusted networks: TRUE | cell-type-adjusted methylation: TRUE 
+Annotation rows: 39376 
+GSE146339 — genes: 39376 | samples: 12 
+Library sizes (millions):
+GSM4378490 GSM4378491 GSM4378492 GSM4378493 GSM4378494 GSM4378495 GSM4378496 
+     19.01      19.91      19.09      17.45      17.34      17.02      58.67 
+GSM4378497 GSM4378498 GSM4378499 GSM4378500 GSM4378501 
+     59.57      61.23      61.59      53.07      59.65 
+
+--- Sample annotation ---
+          gsm         label timepoint condition
+1  GSM4378490  D28_control1       D28   Control
+2  GSM4378491  D28_control2       D28   Control
+3  GSM4378492  D28_control3       D28   Control
+4  GSM4378493      D28_FXS1       D28       FXS
+5  GSM4378494      D28_FXS2       D28       FXS
+6  GSM4378495      D28_FXS3       D28       FXS
+7  GSM4378496 D105_control4      D105   Control
+8  GSM4378497 D105_control5      D105   Control
+9  GSM4378498 D105_control6      D105   Control
+10 GSM4378499     D105_FXS4      D105       FXS
+11 GSM4378500     D105_FXS5      D105       FXS
+12 GSM4378501     D105_FXS6      D105       FXS
+
+Timepoint x condition:
+      
+       Control FXS
+  D105       3   3
+  D28        3   3
+
+Genes before filtering: 39376 | after: 28680 
+
+Design formula: ~timepoint + condition 
+FXS: 6 | Control: 6 
+Warning message:
+In grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y,  :
+  for 'PCA — GSE146339 cerebral organoids' in 'mbcsToSbcs': - substituted for — (U+2014)
+
+Step 3 done. PC1 separating D28 from D105 is expected.
+estimating size factors
+estimating dispersions
+gene-wise dispersion estimates
+mean-dispersion relationship
+final dispersion estimates
+fitting model and testing
+
+Coefficients: Intercept timepoint_D105_vs_D28 condition_FXS_vs_Control 
+
+out of 28680 with nonzero total read count
+adjusted p-value < 0.05
+LFC > 0 (up)       : 1, 0.0035%
+LFC < 0 (down)     : 14, 0.049%
+outliers [1]       : 380, 1.3%
+low counts [2]     : 2758, 9.6%
+(mean count < 2)
+[1] see 'cooksCutoff' argument of ?results
+[2] see 'independentFiltering' argument of ?results
+
+Genes with a symbol: 28680 / 28680 
+There were 50 or more warnings (use warnings() to see the first 50)
+
+Significant DEGs: 13 
+Upregulated: 1 
+Downregulated: 12 
+
+=== FMR1 SANITY CHECK ===
+     Symbol baseMean log2FoldChange      pvalue         padj
+2332   FMR1 1331.748      -10.47431 1.20462e-55 3.076841e-51
+PASS — FMR1 down in FXS, as expected.
+Warning message:
+In grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y,  :
+  for 'FXS vs Control — Volcano Plot (GSE146339)' in 'mbcsToSbcs': - substituted for — (U+2014)
+
+Step 4 done — proceed only if FMR1 passed.
+
+Methylation matrix dimensions: 485497 62 
+FXS: 9 | Control: 53 
+Sex: gender: male 62 — all-male cohort, so X-inactivation cannot confound FMR1
+Beta value range: 0 0.9951 
+Probes after NA removal: 485497 
+
+Cell-proportion differences FXS vs Control (Wilcoxon p):
+      B      NK    CD4T    CD8T    Mono  Neutro  Eosino 
+0.34800 0.15200 0.31800 0.01250 0.07530 0.19400 0.00181 
+
+Primary DMP model: ~ condition + cell proportions 
+DMPs at FDR < 0.05 — adjusted: 134 | unadjusted: 103 
+            used  (Mb) gc trigger   (Mb)  max used   (Mb)
+Ncells  14336459 765.7   24811997 1325.2  24811997 1325.2
+Vcells 107698349 821.7  313684676 2393.3 313616775 2392.8
+Significant DMPs (FDR<0.05, |logFC|>0.1): 41 
+Hypermethylated: 23 
+Hypomethylated: 18 
+
+=== Step 5B: CpG probe to gene mapping ===
+Probes with annotation: 41 / 41 
+
+Gene methylation status:
+
+Hypermethylated  Hypomethylated 
+              9              12 
+# A tibble: 21 × 4
+   Gene    mean_logFC n_probes meth_status    
+   <chr>        <dbl>    <int> <chr>          
+ 1 ADAM12      -0.161        1 Hypomethylated 
+ 2 ASFMR1       0.582       15 Hypermethylated
+ 3 CACNA1C      0.139        1 Hypermethylated
+ 4 CACNG6      -0.109        1 Hypomethylated 
+ 5 CLEC16A     -0.172        1 Hypomethylated 
+ 6 COLEC12     -0.130        1 Hypomethylated 
+ 7 E2F5         0.112        1 Hypermethylated
+ 8 FMR1         0.582       15 Hypermethylated
+ 9 FSCN2       -0.114        1 Hypomethylated 
+10 FTSJ2       -0.125        1 Hypomethylated 
+# ℹ 11 more rows
+
+=== KEY BIOLOGICAL FINDING ===
+FMR1: Hypermethylated | mean logFC 0.582 | 15 probes
+FXS methylation is focal — the majority of significant DMPs are
+FMR1/ASFMR1 probes. This is the expected single-locus pattern.
+
+FMR1/ASFMR1 probes — mean dBeta unadjusted: 0.562 | cell-adjusted: 0.582 
+
+=== Step 5C: Continuous promoter methylation ===
+Promoter-associated probes: 200334 
+Genes with promoter methylation data: 20977 
+Promoter beta range: 0.001 0.99 
+Median promoter beta: 0.259 
+
+Step 5 done
+
+TF list size: 1390 
+Timepoint removed for networks. PC1 vs timepoint |r| before: 0.96 | after: 0 
+Expression matrix after dedup: 28679 genes
+TFs found in expression data: 1330 
+
+Known FXS TFs recovered:
+      TF in_expr in_tf_in_data
+1    SP1    TRUE          TRUE
+2   NRF1    TRUE          TRUE
+3 TFAP2A    TRUE          TRUE
+4   REST    TRUE          TRUE
+5   SIX3    TRUE          TRUE
+6  FOXG1    TRUE          TRUE
+
+=== Step 6D: FMR1 / ASFMR1 ===
+            Symbol    baseMean log2FoldChange       pvalue         padj
+2332          FMR1 1331.748026     -10.474313 1.204620e-55 3.076841e-51
+100126270 FMR1-AS1    3.301024      -5.081229 2.149979e-07 2.745738e-03
+Gene-level counts — no isoform ambiguity to resolve.
+
+Step 6 done
+
+Starting GENIE3 inference...
+Non-TF genes before / after expression floor: 22011 / 18107 
+Genes for GENIE3: 6333 | TFs: 1330 | non-TF targets: 5003 
+GENIE3 complete
+Per-target weight sums (should be ~1): 1 1 
+Total edges: 8260380 
+             TF   Target     Weight
+7557367    OSR2     NFE4 0.03806614
+6768994    PDX1     RFX8 0.03253759
+8375264   HOXB7     ZXDA 0.03237606
+5584558   SKOR1    LAMA3 0.03215860
+6362014    PDX1    ITGA9 0.03161180
+6502845   ZNF22 PSORS1C1 0.03131851
+1328349     FOS    POTEF 0.03101913
+4497868 BHLHA15    P4HA3 0.03095985
+5403462  ZNF132   HS6ST3 0.03047550
+2655420    LBX2    CPLX4 0.03004211
+Known FXS TFs found: SP1, NRF1, TFAP2A, REST, SIX3, FOXG1 
+
+Step 7 done
+
+Loading STRING PPI...
+High confidence PPI edges: 473860 
+STRING proteins mapped to symbols: 16201 / 16201 
+PPI edges after symbol mapping: 473860 
+TF-TF PPI edges: 6490 
+PPI matrix dimensions: 1330 1330 
+            used   (Mb) gc trigger   (Mb)  max used   (Mb)
+Ncells  17100309  913.3   49664964 2652.4  25906898 1383.6
+Vcells 191316379 1459.7  313684676 2393.3 313654930 2393.0
+
+Building motif prior from JASPAR...
+Target selection: variance | ranked genes drawn: 5006 
+Non-TF target genes: 3000 
+TFs in data: 1330 
+Target/TF ratio: 2.26 
+'select()' returned 1:1 mapping between keys and columns
+Target genes with Entrez IDs: 3000 
+Warning message:
+In valid.GenomicRanges.seqinfo(x, suggest.trim = TRUE) :
+  GRanges object contains 8 out-of-bound ranges located on sequences
+  chr4_GL000257v2_alt, chr16_KI270728v1_random, chr22_KI270731v1_random,
+  chr3_GL000221v1_random, chr1_KI270706v1_random, chr16_GL383556v1_alt, and
+  chrUn_KI270748v1. Note that ranges located on a sequence whose length is
+  unknown (NA) or on a circular sequence are not considered out-of-bound (use
+  seqlengths() and isCircular() to get the lengths and circularity flags of the
+  underlying sequences). You can use trim() to trim these ranges. See
+  ?`trim,GenomicRanges-method` for more information.
+'select()' returned 1:1 mapping between keys and columns
+Promoter regions: 2802 
+Promoters on main chromosomes: 2802 (dropped 0 scaffold entries)
+Promoters after trimming (width >= 100bp): 2802 
+Targets remaining: 2802 | TFs: 1330 | ratio: 2.11 
+JASPAR motifs loaded: 633 | matching our TFs: 523 
+Scanning promoters for motif matches (several minutes)...
+Motif match matrix: 2802 523 
+There were 50 or more warnings (use warnings() to see the first 50)
+Raw motif edges: 373665 
+Motif edges: 373665 | TFs: 523 | targets: 2802 
+Score range: 5e-04 32.0446 
+            used   (Mb) gc trigger   (Mb)  max used   (Mb)
+Ncells  17169788  917.0   49664964 2652.4  49664964 2652.4
+Vcells 194725043 1485.7  313684676 2393.3 313684668 2393.3
+
+=== 8B-METH: Continuous methylation weighting ===
+Motif target genes: 2802 
+With promoter methylation data: 2099 (74.9%)
+Genes without data assigned the median beta: 0.259 
+
+Weight range: 0.593 1.484 
+Edges up-weighted: 301670 
+Edges down-weighted: 71995 
+Edges effectively modulated: 350297 (93.7% of prior)
+Motif prior updated — PANDA uses methylation-weighted edges
+
+Expression subset for PANDA: 3325 12 
+Motif edges after variance filter: 373665 
+TFs: 523 | targets: 2802 
+PPI edges: 6490 
+Motif TFs missing from PPI: 98 
+PPI edges after self-edges: 6588 
+
+Running PANDA on 373665 motif edges...
+[1] "Initializing and validating"
+[1] "Verified sufficient samples"
+[1] "Normalizing networks..."
+[1] "Learning Network..."
+[1] "Using tanimoto similarity"
+Iteration0: hamming distance =2.03277
+Iteration1: hamming distance =0.75785
+Iteration2: hamming distance =0.59149
+Iteration3: hamming distance =0.52142
+Iteration4: hamming distance =0.47377
+Iteration5: hamming distance =0.43243
+Iteration6: hamming distance =0.39291
+Iteration7: hamming distance =0.35432
+Iteration8: hamming distance =0.31683
+Iteration9: hamming distance =0.28097
+Iteration10: hamming distance =0.24725
+Iteration11: hamming distance =0.21603
+Iteration12: hamming distance =0.18756
+Iteration13: hamming distance =0.16192
+Iteration14: hamming distance =0.13907
+Iteration15: hamming distance =0.11891
+Iteration16: hamming distance =0.10127
+Iteration17: hamming distance =0.08593
+Iteration18: hamming distance =0.07268
+Iteration19: hamming distance =0.0613
+Iteration20: hamming distance =0.05156
+Iteration21: hamming distance =0.04327
+Iteration22: hamming distance =0.03624
+Iteration23: hamming distance =0.03028
+Iteration24: hamming distance =0.02527
+Iteration25: hamming distance =0.02104
+Iteration26: hamming distance =0.0175
+Iteration27: hamming distance =0.01454
+Iteration28: hamming distance =0.01206
+Iteration29: hamming distance =0.00999
+Iteration30: hamming distance =0.00827
+Iteration31: hamming distance =0.00684
+Iteration32: hamming distance =0.00565
+Iteration33: hamming distance =0.00466
+Iteration34: hamming distance =0.00385
+Iteration35: hamming distance =0.00317
+Iteration36: hamming distance =0.00261
+Iteration37: hamming distance =0.00215
+Iteration38: hamming distance =0.00177
+Iteration39: hamming distance =0.00146
+Iteration40: hamming distance =0.0012
+Iteration41: hamming distance =0.00098
+Successfully ran PANDA on 3325 Genes and 873 TFs.
+Time elapsed:235.28seconds.
+Warning messages:
+1: In type.convert.default(X[[i]], ...) :
+  'as.is' should be specified by the caller; using TRUE
+2: In type.convert.default(X[[i]], ...) :
+  'as.is' should be specified by the caller; using TRUE
+
+Total PANDA edges: 2902725 
+Score range: -5.323 14.073 
+PANDA edges with Score > 0: 1009674 
+Unique TFs: 873 | unique targets: 3150 
+            TF   Target    Score
+2378043 ZNF410   FAM72B 14.07258
+2138827  ZBED1   CFAP65 12.73647
+193732   GLIS1     FZD5 12.42396
+74739    BCL6B    CDC20 11.51474
+1363617 ZNF410      DSP 11.39251
+655992    E2F3 MIR924HG 11.20167
+2103047 ZNF382     SELL 10.88955
+1063688   TP63 NAV2-AS2 10.84911
+1826242  GLIS1     ASPM 10.50407
+1865527  GLIS1  ELAPOR2 10.32957
+
+Known FXS TFs recovered by PANDA: SP1, NRF1, TFAP2A, REST, SIX3, FOXG1 
+
+Step 8 done
+            used  (Mb) gc trigger   (Mb)  max used   (Mb)
+Ncells  17201122 918.7   49664964 2652.4  49664964 2652.4
+Vcells 125787610 959.7  385877350 2944.1 482346687 3680.1
+
+=== PART 1 COMPLETE — checkpoint_step8.RData saved ===
+Restart R, then run part2_steps9-16.R

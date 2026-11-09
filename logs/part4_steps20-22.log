@@ -1,0 +1,71 @@
+FXS_ROOT: /content/drive/MyDrive/fxs-research-run 
+FXS_REPO: /content/fxs-research 
+Config loaded | cores: 2 | target selection: variance | GENIE3 targets: 5000 | timepoint-adjusted networks: TRUE | cell-type-adjusted methylation: TRUE 
+
+FXS_ROOT: /content/drive/MyDrive/fxs-research-run 
+FXS_REPO: /content/fxs-research 
+Config loaded | cores: 2 | target selection: variance | GENIE3 targets: 5000 | timepoint-adjusted networks: TRUE | cell-type-adjusted methylation: TRUE 
+Checkpoint loaded.
+
+=== STEP 20: Tissue-general vs tissue-specific ===
+                          Category  N
+1        Tissue-general (>=2 of 3)  2
+2               All three contexts  1
+3          Specific: organoid only 11
+4        Specific: NPC/B/iPSC only 60
+5 Specific: blood methylation only 19
+                      Pair Size_A Size_B Overlap   Expected      p_hyper
+1   Organoid vs NPC_B_iPSC     13     26       1 0.01279964 1.272717e-02
+2   Organoid vs Blood_meth     13     19       2 0.00935358 3.807574e-05
+3 NPC_B_iPSC vs Blood_meth     26     19       1 0.01870716 1.854858e-02
+          Genes
+1          FMR1
+2 FMR1;FMR1-AS1
+3          FMR1
+Tissue-general genes with donor-blocked validation DEGs: FMR1, FMR1-AS1 
+
+=== STEP 21: CollecTRI ===
+[2026-11-09 14:45:16] [SUCCESS] [OmnipathR] Loaded 64979 interactions from cache.
+[2026-11-09 14:45:17] [SUCCESS] [OmnipathR] Loaded 207 interactions from cache.
+       TF Source N_predicted N_curated N_overlap   Expected Fold_enrich
+7    REST GENIE3         500        50        17  3.9475762    4.306440
+8    REST  PANDA         500        50        10  3.9475762    2.533200
+20 ZBTB7B  PANDA         500        12         4  0.9474183    4.222000
+2     SP1  PANDA         500       577        60 45.5550292    1.317088
+34 ZNF148  PANDA         500        14         4  1.1053213    3.618857
+5  TFAP2A GENIE3         500       149        19 11.7637770    1.615128
+14  RREB1  PANDA         500         4         2  0.3158061    6.333000
+6  TFAP2A  PANDA         500       149        18 11.7637770    1.530121
+26   IRF3  PANDA         500        26         5  2.0527396    2.435769
+10   SIX3  PANDA         500        11         3  0.8684668    3.454364
+19 ZBTB7B GENIE3         500        12         3  0.9474183    3.166500
+28  SMAD3  PANDA         257       100         7  4.0581083    1.724942
+43   SPI1 GENIE3         500       115        13  9.0794252    1.431809
+36   KLF5  PANDA         500        43         6  3.3949155    1.767349
+24  HESX1  PANDA         500        10         2  0.7895152    2.533200
+37  MEF2A GENIE3         500        49         6  3.8686247    1.550939
+40   KLF4  PANDA         500        60         7  4.7370914    1.477700
+44   SPI1  PANDA         500       115        12  9.0794252    1.321670
+16   TCF7  PANDA         500        12         2  0.9474183    2.111000
+33 ZNF148 GENIE3         500        14         2  1.1053213    1.809429
+         pvalue          FDR
+7  1.164073e-07 5.121920e-06
+8  4.954976e-03 1.090095e-01
+20 1.138959e-02 1.561749e-01
+2  1.419772e-02 1.561749e-01
+34 2.029958e-02 1.786363e-01
+5  2.469301e-02 1.810821e-01
+14 3.353111e-02 2.107670e-01
+6  4.505686e-02 2.202507e-01
+26 4.955820e-02 2.202507e-01
+10 5.005699e-02 2.202507e-01
+19 6.294612e-02 2.517845e-01
+28 1.107925e-01 3.759228e-01
+43 1.190052e-01 3.759228e-01
+36 1.196118e-01 3.759228e-01
+24 1.839317e-01 4.765546e-01
+37 1.867299e-01 4.765546e-01
+40 1.922253e-01 4.765546e-01
+44 1.949541e-01 4.765546e-01
+16 2.438288e-01 5.646561e-01
+33 3.043606e-01 6.695934e-01

@@ -1,0 +1,835 @@
+Loading required package: S4Vectors
+Loading required package: stats4
+Loading required package: BiocGenerics
+Loading required package: generics
+
+Attaching package: ‘generics’
+
+The following objects are masked from ‘package:base’:
+
+    as.difftime, as.factor, as.ordered, intersect, is.element, setdiff,
+    setequal, union
+
+
+Attaching package: ‘BiocGenerics’
+
+The following objects are masked from ‘package:stats’:
+
+    IQR, mad, sd, var, xtabs
+
+The following objects are masked from ‘package:base’:
+
+    anyDuplicated, aperm, append, as.data.frame, basename, cbind,
+    colnames, dirname, do.call, duplicated, eval, evalq, Filter, Find,
+    get, grep, grepl, is.unsorted, lapply, Map, mapply, match, mget,
+    order, paste, pmax, pmax.int, pmin, pmin.int, Position, rank,
+    rbind, Reduce, rownames, sapply, saveRDS, table, tapply, unique,
+    unsplit, which.max, which.min
+
+
+Attaching package: ‘S4Vectors’
+
+The following object is masked from ‘package:utils’:
+
+    findMatches
+
+The following objects are masked from ‘package:base’:
+
+    expand.grid, I, unname
+
+Loading required package: IRanges
+Loading required package: GenomicRanges
+Loading required package: Seqinfo
+Loading required package: SummarizedExperiment
+Loading required package: MatrixGenerics
+Loading required package: matrixStats
+
+Attaching package: ‘MatrixGenerics’
+
+The following objects are masked from ‘package:matrixStats’:
+
+    colAlls, colAnyNAs, colAnys, colAvgsPerRowSet, colCollapse,
+    colCounts, colCummaxs, colCummins, colCumprods, colCumsums,
+    colDiffs, colIQRDiffs, colIQRs, colLogSumExps, colMadDiffs,
+    colMads, colMaxs, colMeans2, colMedians, colMins, colOrderStats,
+    colProds, colQuantiles, colRanges, colRanks, colSdDiffs, colSds,
+    colSums2, colTabulates, colVarDiffs, colVars, colWeightedMads,
+    colWeightedMeans, colWeightedMedians, colWeightedSds,
+    colWeightedVars, rowAlls, rowAnyNAs, rowAnys, rowAvgsPerColSet,
+    rowCollapse, rowCounts, rowCummaxs, rowCummins, rowCumprods,
+    rowCumsums, rowDiffs, rowIQRDiffs, rowIQRs, rowLogSumExps,
+    rowMadDiffs, rowMads, rowMaxs, rowMeans2, rowMedians, rowMins,
+    rowOrderStats, rowProds, rowQuantiles, rowRanges, rowRanks,
+    rowSdDiffs, rowSds, rowSums2, rowTabulates, rowVarDiffs, rowVars,
+    rowWeightedMads, rowWeightedMeans, rowWeightedMedians,
+    rowWeightedSds, rowWeightedVars
+
+Loading required package: Biobase
+Welcome to Bioconductor
+
+    Vignettes contain introductory material; view with
+    'browseVignettes()'. To cite Bioconductor, see
+    'citation("Biobase")', and for packages 'citation("pkgname")'.
+
+
+Attaching package: ‘Biobase’
+
+The following object is masked from ‘package:MatrixGenerics’:
+
+    rowMedians
+
+The following objects are masked from ‘package:matrixStats’:
+
+    anyMissing, rowMedians
+
+── Attaching core tidyverse packages ──────────────────────── tidyverse 2.0.0 ──
+✔ dplyr     1.2.1     ✔ readr     2.2.0
+✔ forcats   1.0.1     ✔ stringr   1.6.0
+✔ ggplot2   4.0.3     ✔ tibble    3.3.1
+✔ lubridate 1.9.5     ✔ tidyr     1.3.2
+✔ purrr     1.2.2     
+── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
+✖ lubridate::%within%() masks IRanges::%within%()
+✖ dplyr::collapse()     masks IRanges::collapse()
+✖ dplyr::combine()      masks Biobase::combine(), BiocGenerics::combine()
+✖ dplyr::count()        masks matrixStats::count()
+✖ dplyr::desc()         masks IRanges::desc()
+✖ tidyr::expand()       masks S4Vectors::expand()
+✖ dplyr::filter()       masks stats::filter()
+✖ dplyr::first()        masks S4Vectors::first()
+✖ dplyr::lag()          masks stats::lag()
+✖ ggplot2::Position()   masks BiocGenerics::Position(), base::Position()
+✖ purrr::reduce()       masks GenomicRanges::reduce(), IRanges::reduce()
+✖ dplyr::rename()       masks S4Vectors::rename()
+✖ lubridate::second()   masks S4Vectors::second()
+✖ lubridate::second<-() masks S4Vectors::second<-()
+✖ dplyr::slice()        masks IRanges::slice()
+ℹ Use the conflicted package (<http://conflicted.r-lib.org/>) to force all conflicts to become errors
+
+Attaching package: ‘reshape2’
+
+The following object is masked from ‘package:tidyr’:
+
+    smiths
+
+
+Attaching package: ‘scales’
+
+The following object is masked from ‘package:purrr’:
+
+    discard
+
+The following object is masked from ‘package:readr’:
+
+    col_factor
+
+Loading required package: AnnotationDbi
+
+Attaching package: ‘AnnotationDbi’
+
+The following object is masked from ‘package:dplyr’:
+
+    select
+
+
+
+clusterProfiler v4.20.3 Learn more at https://yulab-smu.top/contribution-knowledge-mining/
+
+Please cite:
+
+G Yu. Background bias in functional enrichment analysis: Insights from
+clusterProfiler. The Innovation Life. 2026, 4(1):100181
+
+Attaching package: ‘clusterProfiler’
+
+The following object is masked from ‘package:AnnotationDbi’:
+
+    select
+
+The following object is masked from ‘package:purrr’:
+
+    simplify
+
+The following object is masked from ‘package:IRanges’:
+
+    slice
+
+The following object is masked from ‘package:S4Vectors’:
+
+    rename
+
+The following object is masked from ‘package:stats’:
+
+    filter
+
+Loading required package: igraph
+
+Attaching package: ‘igraph’
+
+The following object is masked from ‘package:clusterProfiler’:
+
+    simplify
+
+The following objects are masked from ‘package:lubridate’:
+
+    %--%, union
+
+The following objects are masked from ‘package:dplyr’:
+
+    as_data_frame, groups, union
+
+The following objects are masked from ‘package:purrr’:
+
+    compose, simplify
+
+The following object is masked from ‘package:tidyr’:
+
+    crossing
+
+The following object is masked from ‘package:tibble’:
+
+    as_data_frame
+
+The following object is masked from ‘package:GenomicRanges’:
+
+    union
+
+The following object is masked from ‘package:IRanges’:
+
+    union
+
+The following object is masked from ‘package:S4Vectors’:
+
+    union
+
+The following objects are masked from ‘package:BiocGenerics’:
+
+    normalize, path, union
+
+The following objects are masked from ‘package:generics’:
+
+    components, union
+
+The following objects are masked from ‘package:stats’:
+
+    decompose, spectrum
+
+The following object is masked from ‘package:base’:
+
+    union
+
+Loading required package: reticulate
+
+Attaching package: ‘limma’
+
+The following object is masked from ‘package:DESeq2’:
+
+    plotMA
+
+The following object is masked from ‘package:BiocGenerics’:
+
+    plotMA
+
+FXS_ROOT: /content/drive/MyDrive/fxs-research-run 
+FXS_REPO: /content/fxs-research 
+Config loaded | cores: 2 | target selection: variance | GENIE3 targets: 5000 | timepoint-adjusted networks: TRUE | cell-type-adjusted methylation: TRUE 
+FXS_ROOT: /content/drive/MyDrive/fxs-research-run 
+FXS_REPO: /content/fxs-research 
+Config loaded | cores: 2 | target selection: variance | GENIE3 targets: 5000 | timepoint-adjusted networks: TRUE | cell-type-adjusted methylation: TRUE 
+Checkpoint loaded. Objects: 150 
+
+Building GENIE3 network...
+GENIE3 threshold ( 99 th pct): 0.005891 | edges: 82604 
+GENIE3 network — Nodes: 6168 Edges: 82604 
+
+Building PANDA network...
+PANDA threshold (90th pct): 3.796 | edges: 100968 
+PANDA network — Nodes: 3245 Edges: 100968 
+
+--- Network statistics ---
+GENIE3 density: 0.002172 | components: 1 
+PANDA density: 0.009592 | components: 1 
+GENIE3 TF/Target nodes: 1330 / 4838 
+PANDA TF/Target nodes: 518 / 2727 
+Network plots saved
+
+--- Step 10: Hub gene identification ---
+
+Top 20 hub TFs — GENIE3 (by weighted out-degree):
+           Gene Type Degree InDegree OutDegree  Betweenness     PageRank
+MEIS3     MEIS3   TF    221       12       209 0.0004672890 0.0001431588
+HESX1     HESX1   TF    225       19       206 0.0012723230 0.0001527027
+ARID5B   ARID5B   TF    228       25       203 0.0009238483 0.0001545088
+RREB1     RREB1   TF    215        4       211 0.0005403448 0.0001365357
+HIVEP2   HIVEP2   TF    198        5       193 0.0003640431 0.0001344342
+BHLHE40 BHLHE40   TF    204        2       202 0.0001591817 0.0001321148
+TCF7       TCF7   TF    214        6       208 0.0010377712 0.0001394305
+ZNF415   ZNF415   TF    210       17       193 0.0007758433 0.0001471031
+FOXK1     FOXK1   TF    202       18       184 0.0008868997 0.0001604131
+ZNF385A ZNF385A   TF    207       16       191 0.0014440225 0.0001571669
+ERF         ERF   TF    195       19       176 0.0004926928 0.0001486673
+IRF3       IRF3   TF    203       15       188 0.0008625477 0.0001436613
+ZNF503   ZNF503   TF    204       13       191 0.0009594558 0.0001479796
+DMRT1     DMRT1   TF    201       17       184 0.0007504657 0.0001628275
+DMRT3     DMRT3   TF    190       11       179 0.0005582274 0.0001474921
+ZFHX3     ZFHX3   TF    199       31       168 0.0007854946 0.0001786068
+MXD4       MXD4   TF    178       20       158 0.0009275564 0.0001610918
+ZBTB7B   ZBTB7B   TF    191        7       184 0.0003848185 0.0001375382
+ZBTB16   ZBTB16   TF    182        8       174 0.0003205462 0.0001374206
+KLF12     KLF12   TF    189       19       170 0.0008958147 0.0001608268
+        OutStrength
+MEIS3      1.664358
+HESX1      1.611625
+ARID5B     1.592029
+RREB1      1.564932
+HIVEP2     1.555698
+BHLHE40    1.540027
+TCF7       1.526854
+ZNF415     1.509429
+FOXK1      1.479344
+ZNF385A    1.477716
+ERF        1.431913
+IRF3       1.422936
+ZNF503     1.407820
+DMRT1      1.406755
+DMRT3      1.402207
+ZFHX3      1.401866
+MXD4       1.373502
+ZBTB7B     1.359427
+ZBTB16     1.353488
+KLF12      1.334260
+
+Top 20 hub genes — PANDA (by OutDegree):
+         Gene Type Degree InDegree OutDegree Betweenness     PageRank
+ZNF460 ZNF460   TF   1534        0      1534           0 0.0002713483
+ZNF384 ZNF384   TF   1436        0      1436           0 0.0002713483
+IRF1     IRF1   TF   1250        0      1250           0 0.0002713483
+KLF5     KLF5   TF   1239        0      1239           0 0.0002713483
+ZNF148 ZNF148   TF   1201        0      1201           0 0.0002713483
+MEF2A   MEF2A   TF   1181        0      1181           0 0.0002713483
+KLF4     KLF4   TF   1148        0      1148           0 0.0002713483
+ZNF135 ZNF135   TF   1143        0      1143           0 0.0002713483
+MAZ       MAZ   TF   1089        0      1089           0 0.0002713483
+ZNF263 ZNF263   TF   1035        0      1035           0 0.0002713483
+MEF2C   MEF2C   TF   1034        0      1034           0 0.0002713483
+KLF15   KLF15   TF    932        0       932           0 0.0002713483
+SPI1     SPI1   TF    916        0       916           0 0.0002713483
+KLF2     KLF2   TF    851        0       851           0 0.0002713483
+KLF16   KLF16   TF    844        0       844           0 0.0002713483
+KLF9     KLF9   TF    791        0       791           0 0.0002713483
+RREB1   RREB1   TF    671        0       671           0 0.0002713483
+SP9       SP9   TF    665        0       665           0 0.0002713483
+PRDM1   PRDM1   TF    664        0       664           0 0.0002713483
+SNAI3   SNAI3   TF    660        0       660           0 0.0002713483
+
+Known FXS TFs in GENIE3 top 50:
+[1] "REST"
+
+Known FXS TFs in PANDA top 50:
+[1] "TFAP2A"
+Step 10 done
+
+=== Applying netZooR/pandaR class() patches ===
+  Patched: pandaR :: panda 
+  Patched: netZooR :: qsmooth 
+
+LIONESS input: 3325 12 
+Running LIONESS — 12 networks...
+[1] "Computing network for sample  1"
+[1] "Computing network for sample  2"
+[1] "Computing network for sample  3"
+[1] "Computing network for sample  4"
+[1] "Computing network for sample  5"
+[1] "Computing network for sample  6"
+[1] "Computing network for sample  7"
+[1] "Computing network for sample  8"
+[1] "Computing network for sample  9"
+[1] "Computing network for sample  10"
+[1] "Computing network for sample  11"
+[1] "Computing network for sample  12"
+LIONESS complete: 12 networks
+LIONESS edge matrix: 2902725 12 (491 MB)
+FXS: 6 | Control: 6 
+FXS: D28_FXS1, D28_FXS2, D28_FXS3, D105_FXS4, D105_FXS5, D105_FXS6 
+Control: D28_control1, D28_control2, D28_control3, D105_control4, D105_control5, D105_control6 
+Differential edges: 2902725 | FXS >: 1520919 | FXS <: 1381806 
+Edges, condition effect adjusted for timepoint — nominal p<0.05: 25147 | FDR<0.05: 0 | FDR<0.10: 0 
+# A tibble: 6 × 3
+  TF     Mean_Diff N_edges
+  <chr>      <dbl>   <int>
+1 FOXG1    -0.0209    3325
+2 NRF1     -0.137     3325
+3 REST     -0.133     3325
+4 SIX3      0.112     3325
+5 SP1      -0.132     3325
+6 TFAP2A   -0.0977    3325
+Group networks: 2902725 edges each
+TFs: 873 | Targets: 3325 
+Step 11 done
+
+Running ALPACA...
+[1] "Detecting communities in control network..."
+Weights detected. Building condor object with weighted edges.
+[1] "modularity of projected graph 0.316424979142505"
+[1] "Q = 0.317138863997719"
+[1] "Q = 0.317138863997719"
+[1] "Computing differential modularity matrix..."
+[1] "Computing differential modules..."
+[1] "Merging 3995 communities"
+[1] 1
+[1] 2
+[1] 3
+[1] 4
+[1] 5
+[1] 6
+[1] 7
+[1] 8
+[1] 9
+[1] "Merging 250 communities"
+[1] 1
+[1] 2
+[1] "Merging 249 communities"
+[1] 1
+[1] "Computing node scores..."
+[1] 1
+[1] 2
+[1] 3
+[1] 4
+[1] 5
+[1] 6
+[1] 7
+[1] 8
+[1] 9
+[1] 10
+[1] 11
+[1] 12
+[1] 13
+[1] 14
+[1] 15
+[1] 16
+[1] 17
+[1] 18
+[1] 19
+[1] 20
+[1] 21
+[1] 22
+[1] 23
+[1] 24
+[1] 25
+[1] 26
+[1] 27
+[1] 28
+[1] 29
+[1] 30
+[1] 31
+[1] 32
+[1] 33
+[1] 34
+[1] 35
+[1] 36
+[1] 37
+[1] 38
+[1] 39
+[1] 40
+[1] 41
+[1] 42
+[1] 43
+[1] 44
+[1] 45
+[1] 46
+[1] 47
+[1] 48
+[1] 49
+[1] 50
+[1] 51
+[1] 52
+[1] 53
+[1] 54
+[1] 55
+[1] 56
+[1] 57
+[1] 58
+[1] 59
+[1] 60
+[1] 61
+[1] 62
+[1] 63
+[1] 64
+[1] 65
+[1] 66
+[1] 67
+[1] 68
+[1] 69
+[1] 70
+[1] 71
+[1] 72
+[1] 73
+[1] 74
+[1] 75
+[1] 76
+[1] 77
+[1] 78
+[1] 79
+[1] 80
+[1] 81
+[1] 82
+[1] 83
+[1] 84
+[1] 85
+[1] 86
+[1] 87
+[1] 88
+[1] 89
+[1] 90
+[1] 91
+[1] 92
+[1] 93
+[1] 94
+[1] 95
+[1] 96
+[1] 97
+[1] 98
+[1] 99
+[1] 100
+[1] 101
+[1] 102
+[1] 103
+[1] 104
+[1] 105
+[1] 106
+[1] 107
+[1] 108
+[1] 109
+[1] 110
+[1] 111
+[1] 112
+[1] 113
+[1] 114
+[1] 115
+[1] 116
+[1] 117
+[1] 118
+[1] 119
+[1] 120
+[1] 121
+[1] 122
+[1] 123
+[1] 124
+[1] 125
+[1] 126
+[1] 127
+[1] 128
+[1] 129
+[1] 130
+[1] 131
+[1] 132
+[1] 133
+[1] 134
+[1] 135
+[1] 136
+[1] 137
+[1] 138
+[1] 139
+[1] 140
+[1] 141
+[1] 142
+[1] 143
+[1] 144
+[1] 145
+[1] 146
+[1] 147
+[1] 148
+[1] 149
+[1] 150
+[1] 151
+[1] 152
+[1] 153
+[1] 154
+[1] 155
+[1] 156
+[1] 157
+[1] 158
+[1] 159
+[1] 160
+[1] 161
+[1] 162
+[1] 163
+[1] 164
+[1] 165
+[1] 166
+[1] 167
+[1] 168
+[1] 169
+[1] 170
+[1] 171
+[1] 172
+[1] 173
+[1] 174
+[1] 175
+[1] 176
+[1] 177
+[1] 178
+[1] 179
+[1] 180
+[1] 181
+[1] 182
+[1] 183
+[1] 184
+[1] 185
+[1] 186
+[1] 187
+[1] 188
+[1] 189
+[1] 190
+[1] 191
+[1] 192
+[1] 193
+[1] 194
+[1] 195
+[1] 196
+[1] 197
+[1] 198
+[1] 199
+[1] 200
+[1] 201
+[1] 202
+[1] 203
+[1] 204
+[1] 205
+[1] 206
+[1] 207
+[1] 208
+[1] 209
+[1] 210
+[1] 211
+[1] 212
+[1] 213
+[1] 214
+[1] 215
+[1] 216
+[1] 217
+[1] 218
+[1] 219
+[1] 220
+[1] 221
+[1] 222
+[1] 223
+[1] 224
+[1] 225
+[1] 226
+[1] 227
+[1] 228
+[1] 229
+[1] 230
+[1] 231
+[1] 232
+[1] 233
+[1] 234
+[1] 235
+[1] 236
+[1] 237
+[1] 238
+[1] 239
+[1] 240
+[1] 241
+[1] 242
+[1] 243
+[1] 244
+[1] 245
+[1] 246
+[1] 247
+[1] 248
+[1] 249
+the ALPACA output located inresults/ALPACA/FXS_ALPACA
+ALPACA nodes: 3995 | modules: 249 
+
+Top 20 ALPACA nodes:
+         Gene Module      Score   Type
+264    BARHL1      4 0.62568554     TF
+2234     NEFL      4 0.38992448 Target
+2458     OTX1      4 0.37431446     TF
+2140    MPZL2      4 0.30803280 Target
+3359    TAF4B      4 0.30204272 Target
+2879 RNA45SN2      1 0.24018960 Target
+2274     NFIC      1 0.18811626 Target
+1653     JUND      1 0.14581181 Target
+2280    NFKB1      1 0.13636314 Target
+3252     SPIB      1 0.08160104 Target
+3214      SP1      1 0.05726792 Target
+775    DMRTA2      1 0.05620595 Target
+2551     PDX1      1 0.04757780 Target
+2348    NR1D1      1 0.03557801 Target
+1731    KLF15      3 0.01488551     TF
+3907   ZNF460      3 0.01344828     TF
+1732    KLF16      3 0.01341938     TF
+3226      SP9      3 0.01337782     TF
+3219      SP3      3 0.01280628     TF
+3838   ZNF148      3 0.01247456     TF
+
+Known FXS TFs in ALPACA:
+       Gene Module       Score   Type
+3214    SP1      1 0.057267925 Target
+3213    SP1      3 0.010131149     TF
+3430 TFAP2A      3 0.007847213     TF
+2381   NRF1      3 0.007665291     TF
+1132  FOXG1      2 0.006015282     TF
+2827   REST      3 0.005829456     TF
+3045   SIX3      1 0.002347130     TF
+1133  FOXG1     38 0.000000000 Target
+2382   NRF1    103 0.000000000 Target
+Step 12 done
+checkpoint_step12.RData saved
+Modules with >= 5 genes: 8 
+'select()' returned 1:1 mapping between keys and columns
+Genes mapped to Entrez: 3675 / 3675 
+
+Running per-module GO enrichment...
+Top hit genes (Score > 0.05): 12 
+Reading KEGG annotation online: "https://rest.kegg.jp/link/hsa/pathway"...
+Reading KEGG annotation online: "https://rest.kegg.jp/list/pathway/hsa"...
+GO terms (strict): 0 
+GO terms (relaxed): 2 
+Step 13 done
+Top modules: 4 1 3 | nodes: 1913 | edges: 292910 
+Step 14 done (XGMML + GraphML + PNG written without Cytoscape)
+
+=== Step 15: Validation cohort — GSE218676 ===
+GSE218676 — genes: 39376 | samples: 20 
+NOTE: NCBI reprocessed 20 of 26 submitted samples. FXS_426_NPC
+(both replicates) is absent, giving 5 FXS vs 5 Control.
+
+--- Validation cohort annotation ---
+          GSM                line        cell_type           genotype
+1  GSM6754665          PM_137_NPC iPSC derived NPC        Premutation
+2  GSM6754666          PM_137_NPC iPSC derived NPC        Premutation
+3  GSM6754667         FXS_421_NPC iPSC derived NPC                FXS
+4  GSM6754669           NL_18_NPC iPSC derived NPC            Control
+5  GSM6754673           FXS_B_650    B-lymphocytes                FXS
+6  GSM6754674           FXS_B_650    B-lymphocytes                FXS
+7  GSM6754675                NL_B    B-lymphocytes            Control
+8  GSM6754676                NL_B    B-lymphocytes            Control
+9  GSM6754677           FXS_B_900    B-lymphocytes                FXS
+10 GSM6754678           FXS_B_900    B-lymphocytes                FXS
+11 GSM6754679           NL_25_NPC iPSC derived NPC            Control
+12 GSM6754680           NL_25_NPC iPSC derived NPC            Control
+13 GSM6754682           NL_27_NPC iPSC derived NPC            Control
+14 GSM6754683         FXS_470_NPC iPSC derived NPC                FXS
+15 GSM6754684         FXS_470_NPC iPSC derived NPC                FXS
+16 GSM6754685        FXS_421_iPSC             iPSC                FXS
+17 GSM6754686        FXS_421_iPSC             iPSC                FXS
+18 GSM6754689 PMcut_scClone1_iPSC             iPSC Premutation_edited
+19 GSM7634526          NL_18_iPSC             iPSC            Control
+20 GSM7634527          NL_18_iPSC             iPSC            Control
+
+Samples retained: 17 | lines: 10 | donors: 8 
+
+Cell type x genotype (lines):
+                  
+                   Control FXS
+  B-lymphocytes          1   2
+  iPSC                   1   1
+  iPSC derived NPC       3   2
+
+Genes after filtering: 31680 
+Validation design: ~cell_type + condition 
+Biological units after collapsing: 10 
+
+After collapsing:
+                  
+                   Control FXS
+  B_lymphocytes          1   2
+  iPSC                   1   1
+  iPSC_derived_NPC       3   2
+estimating size factors
+estimating dispersions
+gene-wise dispersion estimates
+mean-dispersion relationship
+final dispersion estimates
+fitting model and testing
+
+Validation FXS: 5 | Control: 5 
+
+out of 31680 with nonzero total read count
+adjusted p-value < 0.05
+LFC > 0 (up)       : 42, 0.13%
+LFC < 0 (down)     : 21, 0.066%
+outliers [1]       : 122, 0.39%
+low counts [2]     : 1229, 3.9%
+(mean count < 1)
+[1] see 'cooksCutoff' argument of ?results
+[2] see 'independentFiltering' argument of ?results
+
+Validation DEGs: 63 
+Warning messages:
+1: In nbinomGLM(x = x, Y = YNZ, size = size, weights = weightsNZ, offset = offsetNZ,  :
+  the line search routine failed, possibly due to insufficient numeric precision
+2: In nbinomGLM(x = x, Y = YNZ, size = size, weights = weightsNZ, offset = offsetNZ,  :
+  the line search routine failed, unable to sufficiently decrease the function value
+calcNormFactors has been renamed to normLibSizes
+                                     Metric  Value
+1      Within-donor correlation (consensus)  0.662
+2        DEGs DESeq2 (lines as independent) 63.000
+3           DEGs limma-voom (donor blocked)  1.000
+4                       DEGs shared by both  1.000
+5 LFC correlation DESeq2 vs limma (Pearson)  0.843
+6                         FMR1 log2FC limma -9.191
+7                            FMR1 FDR limma  0.031
+
+FMR1 in validation cohort:
+     Symbol baseMean log2FoldChange       pvalue         padj
+2332   FMR1 1532.891      -8.913354 4.270294e-11 7.195208e-08
+            used   (Mb) gc trigger   (Mb)  max used   (Mb)
+Ncells  15642642  835.5   42284120 2258.3  42284120 2258.3
+Vcells 199815833 1524.5  435821689 3325.1 544508337 4154.3
+
+Primary DEGs (GSE146339 organoids): 13 
+Validation DEGs (GSE218676): 62 
+Overlapping DEGs: 1 
+[1] "FMR1"
+
+Direction check:
+     Gene Primary_LFC Validation_LFC
+FMR1 FMR1   -10.47431      -8.913354
+Concordant: 1 / 1 
+Overlap in PANDA: 1 | in ALPACA: 1 
+Warning message:
+In grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y,  :
+  for 'DEG Overlap — Two Independent FXS Cohorts' in 'mbcsToSbcs': - substituted for — (U+2014)
+Step 15 done
+
+=== STEP 16: Cross-cohort concordance ===
+Primary cohort testable genes: 27167 
+Validation cohort testable genes: 30230 
+Genes measured in both cohorts (background): 26014 
+
+--- Overlap significance ---
+Background N: 26014 | Primary DEGs: 13 | Validation DEGs: 21 | Overlap: 1 
+Expected by chance: 0.01 | Fold enrichment: 95.29 
+Hypergeometric p: 0.0104 | Fisher p: 0.0104 | OR: 107.9 
+             Primary_DEG Primary_notDEG
+Valid_DEG              1             20
+Valid_notDEG          12          25981
+Installed RRHO2 lacks RRHO2_initialize — using the built-in RRHO instead.
+
+RRHO2 not installed — using built-in manual RRHO.
+Manual RRHO peak -log10(p): 13.53 
+Shrunken-LFC Pearson r: 0.008 | Spearman: -0.018 | sign concordance where both |shrunk LFC|>0.1: 100 % of 1 genes
+
+--- Global effect-size correlation ---
+Genes compared: 26014 
+Pearson r: 0.031 p: 5.09e-07 
+Spearman rho: 0.02 p: 0.00115 
+Genome-wide sign concordance: 50.5 %
+INTERPRET: concordance near 50% and r near 0 means the cohorts do
+NOT agree transcriptome-wide. A significant DEG overlap can still
+be enriched above chance. Report both — different claims.
+Tissue differs between cohorts, so partial disagreement is expected.
+`geom_smooth()` using formula = 'y ~ x'
+`geom_smooth()` using formula = 'y ~ x'
+Step 16 done
+            used   (Mb) gc trigger   (Mb)  max used   (Mb)
+Ncells  15685641  837.8   42284120 2258.3  42284120 2258.3
+Vcells 196591005 1499.9  435821689 3325.1 544508337 4154.3
+
+=== PART 2 COMPLETE — checkpoint_step16.RData saved ===
+Restart R, then run part3_steps17-19.R

@@ -29,3 +29,10 @@ rsession.odt
 .Rhistory
 .RDataTmp*
 .~lock.*
+
+_trash/
+checkpoints/*.RData
+checkpoints/*.rds
+Rlib*/
+data/*.gz
+data/*.rds

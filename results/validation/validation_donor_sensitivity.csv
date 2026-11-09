@@ -1,0 +1,8 @@
+"Metric","Value"
+"Within-donor correlation (consensus)",0.662
+"DEGs DESeq2 (lines as independent)",63
+"DEGs limma-voom (donor blocked)",1
+"DEGs shared by both",1
+"LFC correlation DESeq2 vs limma (Pearson)",0.843
+"FMR1 log2FC limma",-9.191
+"FMR1 FDR limma",0.031

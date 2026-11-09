@@ -1,0 +1,11 @@
+"Metric","Value"
+"Permutations",20
+"Edges tested",8260380
+"Null values pooled",115960857
+"Smallest attainable p (per-edge, v4)",0.0476
+"Smallest attainable p (pooled, v5)",8.62e-09
+"Edges pooled p < 0.05",165144
+"Edges pooled FDR < 0.05",0
+"Edges pooled FDR < 0.10",0
+"Edges per-edge p < 0.05",296218
+"Edges per-edge FDR < 0.05",0

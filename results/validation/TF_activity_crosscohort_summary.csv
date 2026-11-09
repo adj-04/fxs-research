@@ -1,0 +1,6 @@
+"Metric","Value"
+"TFs scored in both",737
+"Spearman rho",-0.0192
+"Spearman p",0.602409315867293
+"TFs FDR<0.05 in both",1
+"Same-direction (%)",100

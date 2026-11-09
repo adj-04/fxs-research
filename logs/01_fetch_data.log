@@ -1,0 +1,42 @@
+FXS_ROOT: /content/drive/MyDrive/fxs-research-run 
+FXS_REPO: /content/fxs-research 
+Config loaded | cores: 2 | target selection: variance | GENIE3 targets: 5000 | timepoint-adjusted networks: TRUE | cell-type-adjusted methylation: TRUE 
+
+=== NCBI-reprocessed RNA-seq counts (GRCh38.p13) ===
+  have GSE146339_raw_counts_GRCh38.p13_NCBI.tsv.gz (0.7 MB)
+  have GSE218676_raw_counts_GRCh38.p13_NCBI.tsv.gz (1.1 MB)
+  have Human.GRCh38.p13.annot.tsv.gz (0.3 MB)
+
+=== Sample metadata (shipped in repo, GEO fallback) ===
+  GSE218676_metadata.csv ok 
+  GSE41273_metadata.csv ok 
+  tf_list.txt ok 
+
+=== GSE41273 450K beta matrix (GEO series matrix) ===
+  have GSE41273_methylation_matrix.rds
+
+=== STRING v12.0 human PPI ===
+  have 9606.protein.links.v12.0.txt.gz (83.2 MB)
+  fetching 9606.protein.info.v12.0.txt.gz ...
+    ok (2 MB)
+
+=== TRRUST v2 human ===
+  have trrust_rawdata.human.tsv (0.3 MB)
+
+=== Manifest ===
+                                        file     bytes
+              9606.protein.info.v12.0.txt.gz   1970090
+             9606.protein.links.v12.0.txt.gz  83164437
+                       ANNOTATION_SOURCE.txt        79
+ GSE146339_raw_counts_GRCh38.p13_NCBI.tsv.gz    683616
+                GSE146339_VST_normalized.csv   6085698
+                      GSE218676_metadata.csv    115750
+ GSE218676_raw_counts_GRCh38.p13_NCBI.tsv.gz   1077502
+                       GSE41273_metadata.csv     59627
+             GSE41273_methylation_matrix.rds 249558331
+               Human.GRCh38.p13.annot.tsv.gz    263245
+                                MANIFEST.csv      1040
+                                 tf_list.txt      8585
+                    trrust_rawdata.human.tsv    297659
+
+All inputs ready.

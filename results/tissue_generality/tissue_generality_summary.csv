@@ -1,0 +1,6 @@
+"Category","N","Genes"
+"Tissue-general (>=2 of 3)",2,"FMR1;FMR1-AS1"
+"All three contexts",1,"FMR1"
+"Specific: organoid only",11,""
+"Specific: NPC/B/iPSC only",60,""
+"Specific: blood methylation only",19,""
