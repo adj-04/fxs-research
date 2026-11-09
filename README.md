@@ -1,144 +1,178 @@
 # fxs-research
 
-Multi-omics regulatory network analysis of Fragile X Syndrome, integrating
-RNA-seq differential expression, DNA methylation, and gene regulatory network
-inference across two independent patient-derived cohorts.
+**Gene regulatory network construction in Fragile X syndrome (FXS)**: an
+integrative transcriptomic and epigenomic framework with permutation-tested
+networks, validated across two independent patient-derived cohorts.
+
+The pipeline combines RNA-seq differential expression, cell-composition-adjusted
+DNA methylation, and four network-inference methods (GENIE3, PANDA, LIONESS,
+ALPACA). It tests every network statistic against an FDR-capable permutation
+null and validates candidate regulators against ENCODE ChIP-seq, TRRUST and
+CollecTRI. Everything runs from public data with one Colab notebook.
+
+Paper: [`paper/fxs-paper-v5.pdf`](paper/fxs-paper-v5.pdf)
+
+---
 
 ## Cohorts
 
 | Role | Accession | Material | Design |
 |---|---|---|---|
 | Primary | [GSE146339](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE146339) | iPSC-derived cerebral organoids, day 28 and day 105 | 6 FXS vs 6 control, `~ timepoint + condition` |
-| Validation | [GSE218676](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE218676) | Patient NPC / B-lymphocyte / iPSC | 5 FXS vs 5 control, `~ cell_type + condition` |
-| Methylation | [GSE41273](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE41273) | Peripheral blood, Illumina 450k | 9 case vs 53 control |
+| Validation | [GSE218676](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE218676) | Patient NPC / B-lymphocyte / iPSC lines | 5 FXS vs 5 control lines (8 donors), `~ cell_type + condition` |
+| Methylation | [GSE41273](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE41273) | Peripheral blood, Illumina 450K, all male | 9 FXS vs 53 control, `~ condition + cell proportions` |
 
-Both RNA-seq cohorts use **NCBI-reprocessed gene-level counts** (GRCh38.p13,
-Entrez IDs), so quantification differences cannot account for non-replication
-between them.
+Both RNA-seq cohorts use NCBI-reprocessed gene-level counts (GRCh38.p13), so
+quantification differences cannot explain disagreement between them. The three
+datasets come from three different tissues and are used deliberately as three
+independent windows onto the same lesion.
 
-## Running (v5)
-
-### Google Colab (recommended)
-Open `colab/FXS_GRN_v5_Colab.ipynb` in Colab (Python runtime) and run the cells top to
-bottom. It installs R 4.6 / Bioconductor 3.23 as binaries (r2u), fetches every input,
-and writes data, results, checkpoints and logs to Google Drive. Long permutation steps
-are resumable after a disconnect.
-
-### Locally
-```bash
-export FXS_REPO=$PWD FXS_ROOT=$PWD      # FXS_ROOT = where outputs go
-Rscript scripts/01_fetch_data.R         # downloads all inputs once
-Rscript scripts/part1_steps1-8.R        # -> checkpoints/checkpoint_step8.RData
-Rscript scripts/part2_steps9-16.R       # -> checkpoint_step16.RData
-Rscript scripts/part3_steps17-19.R      # resumable nulls -> checkpoint_step19.RData
-Rscript scripts/17b-run.R               # PANDA null, resumable
-Rscript scripts/part4_steps20-22.R      # tissue generality, CollecTRI, summary
-Rscript scripts/14_cytoscape_local.R    # with Cytoscape open: styled figures + .cys
-```
-Each part is a fresh R process (memory is released between them). Settings live in
-`scripts/00_config.R` and can be overridden with environment variables. See
-`CHANGES.md` for what changed from v4 and why.
-
-**Stop at the FMR1 gate in Step 4.** If FMR1 is not significantly downregulated in FXS,
-the sample labels are wrong and nothing downstream is meaningful.
-
-## Pipeline
-
-| Steps | Contents |
-|---|---|
-| 1–4 | Count loading, metadata-driven sample annotation, VST, DESeq2 |
-| 5 | Differential methylation (limma), CpG→gene mapping, continuous promoter beta |
-| 6–7 | TF list preparation, GENIE3 network inference |
-| 8 | STRING PPI, JASPAR motif prior, methylation weighting, PANDA |
-| 9–10 | igraph network construction, hub identification |
-| 11–12 | LIONESS sample-specific networks, ALPACA differential modules |
-| 13–14 | GO/KEGG enrichment, Cytoscape export |
-| 15–16 | Validation cohort DE, cross-cohort concordance (Fisher, RRHO, effect-size correlation) |
-| 17 | Permutation nulls: GENIE3, PANDA, ALPACA, LIONESS bootstrap |
-| 18 | Weight-based centrality, target-restriction bias, module-local centrality |
-| 19 | In silico validation: ChEA3, ENCODE ChIP-seq, TRRUST |
-
-### Methylation integration
-
-Promoter methylation enters the PANDA motif prior as a continuous weight
-(`1.5 − promoter_beta`), computed from control-group beta values so the prior
-encodes baseline promoter accessibility rather than the FXS contrast. An earlier
-binary hyper/hypo scheme modulated only 0.12% of prior edges and was replaced.
-
-Methylation comes from an independent cohort with no shared subjects. It is a
-**population-level prior on regulatory accessibility, not matched per-subject
-multi-omics.**
+---
 
 ## Key results
 
-**FMR1 silencing replicates across all three datasets:**
-
-| Dataset | Result |
+| | Result |
 |---|---|
-| GSE146339 | log2FC −10.47, padj 3.1 × 10⁻⁵¹ |
-| GSE218676 | log2FC −8.91, padj 7.2 × 10⁻⁸ |
-| GSE41273 | Hypermethylated, mean logFC 0.562 across 15 probes |
+| **FMR1 silencing** | Replicates in all three datasets: log2FC −10.47 (organoids), −8.91 (validation lines), Δβ = 0.58 across 15 promoter probes (blood, cell-adjusted) |
+| **Significant differential module** | ALPACA module 4: TFs **BARHL1, OTX1** with targets **NEFL, MPZL2, TAF4B**. FDR = 0.0099; still significant with half the permutations (FDR = 0.03) |
+| **Best-validated regulator** | **REST**: rank 1 in ChEA3's ENCODE ChIP-seq library for both GENIE3 and PANDA targets; curated-target enrichment in TRRUST (FDR = 0.004) and CollecTRI (FDR = 5 × 10⁻⁶); top-30 GENIE3 hub |
+| **TF activity** | SP1 activity lower in FXS in both cohorts (validation FDR = 0.003); CTNNB1 is the only TF significant in both |
+| **Tissue generality** | Only FMR1 and FMR1-AS1 are significant in more than one tissue context |
+| **Local centrality** | SP1, TFAP2A, NRF1, REST and FOXG1 sit in the top decile of their own module without being genome-wide hubs |
 
-FMR1-AS1 is also downregulated (log2FC −5.08). Methylation is focal: FMR1 and
-ASFMR1 account for the majority of significant DMPs.
-
-**Known FXS regulators are locally central without being global hubs.** None of
-the six appear in the GENIE3 genome-wide top 50, but 4 of 5 fall in the top
-decile of weighted out-strength within their own ALPACA module (median
-percentile 0.953).
-
-**In silico validation:** ENCODE ChIP-seq self-recovery places 6/18 TF-network
-pairs at rank ≤10 and 9/18 at ≤25 (REST and NRF1 both rank 1). TRRUST curated
-targets are enriched for 3/20 pairs at FDR < 0.05, led by SP1 (4.3× enrichment,
-p = 1.8 × 10⁻⁷).
-
-## Negative results
-
-These are reported deliberately. Four independent tests agree that network-level
-inference is underpowered at this sample size.
+**Negative results, reported in full.** At n = 6 vs 6, no individual edge is
+distinguishable from chance:
 
 | Test | Result |
 |---|---|
-| Cross-cohort effect-size correlation | Pearson r = 0.034, sign concordance 50.6% |
-| DEG overlap | 1 gene (FMR1), but 94.7× enriched over chance (p = 0.011) |
-| GENIE3 permutation null | 46,796 edges nominal p < 0.05, **0 at FDR < 0.05** |
-| PANDA randomized-prior null | Null q95 = 3.49 vs observed 90th pct 3.51 — indistinguishable |
-| ALPACA permutation null | 484 nodes nominal, **0 at FDR**; best module FDR = 0.19 |
-| LIONESS bootstrap | 49.9% of edges stronger in FXS, 95% CI [46.7%, 52.3%] |
+| GENIE3 edges (pooled null, 20 permutations) | 0 of 8.26 M at FDR < 0.05 |
+| PANDA edges (randomized-prior null) | 0 at FDR; 5.2% above null q95, so scores are driven by the priors |
+| LIONESS edges (limma, timepoint-adjusted) | 0 of 2.9 M at FDR < 0.05 |
+| LIONESS genome-wide shift | 52.4% of edges stronger in FXS, 95% CI [48.3, 53.4] |
+| Cross-cohort effect sizes | Pearson r = 0.031 (shrunken: 0.008); sign concordance 50.5% |
+| Cross-cohort TF activity | Spearman ρ = −0.02 across 737 TFs |
+| Validation DEGs, donor-blocked | 63 at line level, 1 (FMR1) once donor is modelled |
 
-The PANDA result specifically indicates that edge scores largely reproduce the
-motif/PPI prior rather than adding expression-driven signal.
+All headline numbers: [`results/v5_headline_numbers.csv`](results/v5_headline_numbers.csv).
 
-## Limitations
+---
 
-1. Cohorts differ in tissue (cerebral organoid vs NPC / B-lymphocyte / iPSC).
-   Genes replicating across both are robust to tissue context; failures to
-   replicate may be tissue-specific rather than false positives.
-2. Methylation is from a third tissue (blood) and a third cohort.
-3. GENIE3 ran on 1,340 genes of which 1,330 are TFs — only 13 DEGs were
-   available to seed the target set. It is effectively a TF–TF network, and
-   only ~0.3% of each known TF's motif regulon was eligible to be discovered
-   (see `TF_target_eligibility_bias.csv`).
-4. LIONESS has no covariate mechanism, so developmental timepoint is unadjusted
-   in the sample-specific networks.
-5. Validation cohort: NCBI reprocessed 20 of 26 submitted samples (FXS_426_NPC
-   absent). Two donors each contribute two cell types, so effective n is below
-   the line count.
-6. In silico validation shows inferred edges recover known binding above chance.
-   It does not establish causality in FXS and is not equivalent to experimental
-   confirmation.
+## Running it
 
-**Note on v4 GENIE3 outputs:** in v4 the GENIE3 regulator and target columns were
-swapped (GENIE3 normalises per target, hence `Sum_Weight = 1` per "TF"). Fixed in v5;
-see `CHANGES.md`.
+### Google Colab (recommended)
+
+Open [`colab/FXS_GRN_v5_Colab.ipynb`](colab/FXS_GRN_v5_Colab.ipynb) in Colab
+with the default **Python 3** runtime and run the cells top to bottom.
+
+- Installs R 4.6 / Bioconductor 3.23 as binaries (via [r2u](https://github.com/eddelbuettel/r2u)).
+- Downloads every input from GEO, STRING and TRRUST, so there is nothing to upload.
+- Writes data, results, figures, checkpoints and logs to Google Drive.
+- Permutation steps checkpoint after every iteration. After a disconnect, rerun
+  the setup cells and the same stage; it resumes where it stopped.
+- Needs about 6 GB of Drive space. Total run time on the free tier is roughly 4–5 hours.
+
+### Locally
+
+```bash
+export FXS_REPO=$PWD FXS_ROOT=$PWD      # FXS_ROOT = where outputs are written
+Rscript scripts/01_fetch_data.R         # download all inputs once (MD5 manifest)
+Rscript scripts/part1_steps1-8.R        # DE, methylation, GENIE3, PANDA
+Rscript scripts/part2_steps9-16.R       # networks, LIONESS, ALPACA, enrichment, validation cohort
+Rscript scripts/part3_steps17-19.R      # GENIE3/ALPACA nulls, centrality, ENCODE/TRRUST
+Rscript scripts/17b-run.R               # PANDA null
+Rscript scripts/part4_steps20-22.R      # tissue generality, CollecTRI, headline numbers
+```
+
+Each part runs in a fresh R process, so memory is released between stages
+(peak about 6 GB). Settings live in `scripts/00_config.R` and can be overridden
+with environment variables, for example `FXS_N_PERM_ALPACA=50` or `FXS_CORES=4`.
+
+**FMR1 gate.** Step 4 stops the pipeline if FMR1 is not significantly
+downregulated in FXS, which checks that the sample labels are correct.
+
+### Cytoscape figures (local)
+
+Open Cytoscape first (cap its memory with `-Xmx3g` in `Cytoscape.vmoptions`), then in R:
+
+```r
+setwd("~/fxs-research")
+source("scripts/14_cytoscape_local.R")
+```
+
+This builds the styled ALPACA network via RCy3: the FDR-significant module in
+full (gold border) plus the strongest remaining edges. It exports PNG/PDF,
+per-module figures, XGMML, the style file and a `.cys` session to
+`figures/ALPACA/` and `networks/`.
+
+---
+
+## Pipeline
+
+| Steps | Script | Contents |
+|---|---|---|
+| 0 | `01_fetch_data.R` | GEO counts and 450K betas, STRING v12 links and protein info, TRRUST; MD5 manifest |
+| 1–4 | part 1 | Sample annotation, VST, DESeq2 with apeglm shrinkage, FMR1 gate |
+| 5 | part 1 | EpiDISH cell proportions, limma DMPs (adjusted and unadjusted), promoter beta |
+| 6 | part 1 | TF list (1,330), timepoint removed for networks, label-free target universe |
+| 7 | part 1 | GENIE3: 1,330 TFs → 6,333 genes (5,003 non-TF targets) |
+| 8 | part 1 | JASPAR motif prior, STRING PPI, methylation weighting (`1.5 − β`), PANDA |
+| 9–10 | part 2 | Network construction, hubs (GENIE3 weighted out-degree, PANDA out-degree) |
+| 11 | part 2 | LIONESS (12 networks), per-edge limma `~ timepoint + condition` |
+| 12–14 | part 2 | ALPACA modules, GO/KEGG enrichment, network export |
+| 15–16 | part 2 | Validation cohort DE with donor-blocked limma-voom; cross-cohort overlap, correlation, RRHO |
+| 17 | part 3, 17b | Pooled permutation nulls (GENIE3, PANDA, ALPACA); stratified LIONESS bootstrap |
+| 18 | part 3 | Centrality, target-universe coverage, module-local centrality |
+| 19 | part 3 | ChEA3 / ENCODE ChIP-seq self-recovery, TRRUST enrichment |
+| 20–22 | part 4 | Tissue-generality classification, CollecTRI enrichment and TF activity, headline table |
+
+### Design choices worth knowing
+
+- **Label-free gene selection.** Network targets are the highest-variance
+  expressed genes (≥10 counts in ≥3 samples) plus the DEGs, chosen without
+  FXS/control labels, so differential tests on the networks are not circular.
+- **Timepoint removed before network inference.** Developmental stage dominates
+  PC1 (|r| = 0.96) and would otherwise be read as regulation.
+- **Pooled permutation nulls.** Comparing each edge only with its own
+  permutations gives a smallest possible p of 1/(B+1), far too coarse for FDR
+  over millions of edges. Every observed score is instead compared with the
+  pooled null of all edges across all permutations (resolution about 10⁻⁸).
+- **Methylation is a prior, not matched multi-omics.** The blood cohort shares
+  no subjects with the RNA-seq cohorts. Control-group promoter methylation
+  enters the PANDA motif prior as a baseline-accessibility weight.
+
+---
+
+## Repository layout
+
+```
+colab/      Colab notebook, R installer, package installer
+scripts/    00_config.R, 01_fetch_data.R, part1–part4, 17b-run.R, 14_cytoscape_local.R
+results/    summary tables (DE, methylation, GENIE3, PANDA, LIONESS, ALPACA, validation, tissue)
+figures/    all figures, by analysis
+networks/   ALPACA network: XGMML, GraphML, Cytoscape style and session
+logs/       full run logs, sessionInfo per stage, package versions
+data/       metadata, TF list, MANIFEST.csv (inputs are downloaded, not stored)
+paper/      manuscript (LaTeX and PDF)
+```
+
+Very large intermediate files (complete GENIE3, PANDA and LIONESS edge lists,
+and R checkpoints) are not stored; the scripts regenerate them.
 
 ## Environment
 
-R 4.6, Bioconductor 3.23 (exact versions written to `logs/package_versions.csv` and
-`logs/sessionInfo_*.txt` on every run). Core packages: DESeq2, limma, minfi, GENIE3, pandaR,
-netZooR, igraph, clusterProfiler, JASPAR2020, motifmatchr,
-BSgenome.Hsapiens.UCSC.hg38, RCy3. Run `sessionInfo()` for exact versions.
+R 4.6, Bioconductor 3.23. Exact versions of every package are in
+[`logs/package_versions.csv`](logs/package_versions.csv) and
+`logs/sessionInfo_*.txt`. Core packages: DESeq2, apeglm, limma, edgeR, minfi,
+EpiDISH, GENIE3, pandaR, netZooR, igraph, clusterProfiler, JASPAR2020,
+motifmatchr, decoupleR, OmnipathR, RCy3.
 
-netZooR/pandaR in this build contain `class(x) == "ExpressionSet"` comparisons
-that fail under R ≥ 4.0; Step 11 patches these at the namespace level before
-calling LIONESS.
+netZooR and pandaR contain `class(x) == "ExpressionSet"` comparisons that fail
+under R ≥ 4.0; Step 11 patches these at the namespace level before LIONESS runs.
+
+See [`CHANGES.md`](CHANGES.md) for the pipeline changelog.
+
+## Citation
+
+A. Jha and S. Sebastian, "Gene Regulatory Network Construction in Fragile X
+Syndrome: An Integrative Transcriptomic, Epigenomic, and Permutation-Tested
+Computational Framework Across Two Independent Cohorts," preprint, 2026.

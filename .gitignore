@@ -36,3 +36,8 @@ checkpoints/*.rds
 Rlib*/
 data/*.gz
 data/*.rds
+
+# LaTeX build files
+paper/*.aux
+paper/*.log
+paper/*.out
