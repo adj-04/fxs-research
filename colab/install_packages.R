@@ -19,7 +19,8 @@ cat("R:", R.version.string, "\nLibraries:\n"); print(.libPaths())
 
 cran <- c("BiocManager", "remotes", "tidyverse", "dplyr", "tidyr", "ggplot2",
           "ggrepel", "pheatmap", "reshape2", "scales", "igraph", "httr",
-          "jsonlite", "ggvenn", "data.table", "viridisLite")
+          "jsonlite", "ggvenn", "data.table", "viridisLite",
+          "doParallel", "doRNG")
 bioc <- c("DESeq2", "apeglm", "Biobase", "limma", "edgeR", "minfi",
           "IlluminaHumanMethylation450kanno.ilmn12.hg19", "EpiDISH", "GEOquery",
           "org.Hs.eg.db", "AnnotationDbi", "JASPAR2020", "TFBSTools", "motifmatchr",
