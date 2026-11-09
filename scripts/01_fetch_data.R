@@ -31,6 +31,18 @@ fetch <- function(url, dest, min_bytes = 1000) {
   invisible(dest)
 }
 
+# A download can "succeed" with an HTML error page. Check the content.
+is_valid_table_gz <- function(path, must_have) {
+  if (!file.exists(path)) return(FALSE)
+  hdr <- tryCatch(readLines(gzfile(path), n = 1, warn = FALSE), error = function(e) "")
+  length(hdr) == 1 && all(vapply(must_have, grepl, logical(1), x = hdr, fixed = TRUE))
+}
+to_trash <- function(path) {
+  td <- file.path(DATA_DIR, "_trash"); dir.create(td, showWarnings = FALSE)
+  file.rename(path, file.path(td, paste0(format(Sys.time(), "%Y%m%d-%H%M%S_"), basename(path))))
+  cat("  moved invalid", basename(path), "to data/_trash/\n")
+}
+
 geo_counts_url <- function(acc, file)
   paste0("https://www.ncbi.nlm.nih.gov/geo/download/?type=rnaseq_counts&acc=",
          acc, "&format=file&file=", file)
@@ -40,13 +52,21 @@ fetch(geo_counts_url("GSE146339", "GSE146339_raw_counts_GRCh38.p13_NCBI.tsv.gz")
       file.path(DATA_DIR, "GSE146339_raw_counts_GRCh38.p13_NCBI.tsv.gz"))
 fetch(geo_counts_url("GSE218676", "GSE218676_raw_counts_GRCh38.p13_NCBI.tsv.gz"),
       file.path(DATA_DIR, "GSE218676_raw_counts_GRCh38.p13_NCBI.tsv.gz"))
+for (f in c("GSE146339_raw_counts_GRCh38.p13_NCBI.tsv.gz",
+            "GSE218676_raw_counts_GRCh38.p13_NCBI.tsv.gz"))
+  if (!is_valid_table_gz(file.path(DATA_DIR, f), "GeneID")) {
+    to_trash(file.path(DATA_DIR, f))
+    stop(f, " is not a valid count table — rerun this script to download it again")
+  }
+
 # The annotation table is shared across all GEO series: its URL must NOT
 # carry acc=, or NCBI redirects to a per-series folder and returns 404.
 annot_path <- file.path(DATA_DIR, "Human.GRCh38.p13.annot.tsv.gz")
 annot_ok <- tryCatch({
   fetch(paste0("https://www.ncbi.nlm.nih.gov/geo/download/?format=file",
                "&type=rnaseq_counts&file=Human.GRCh38.p13.annot.tsv.gz"),
-        annot_path); TRUE
+        annot_path)
+  if (!is_valid_table_gz(annot_path, c("GeneID", "Symbol"))) { to_trash(annot_path); FALSE } else TRUE
 }, error = function(e) FALSE)
 if (!annot_ok) {
   # Fallback: the pipeline only uses GeneID -> Symbol from this file
@@ -78,8 +98,15 @@ cat("\n=== GSE41273 450K beta matrix (GEO series matrix) ===\n")
 meth_rds <- file.path(DATA_DIR, "GSE41273_methylation_matrix.rds")
 if (!file.exists(meth_rds)) {
   suppressPackageStartupMessages(library(GEOquery))
-  gse <- getGEO("GSE41273", GSEMatrix = TRUE, getGPL = FALSE, destdir = DATA_DIR)
-  es  <- gse[[1]]
+  # Direct download by fixed FTP path: getGEO("GSE41273") first scrapes the
+  # FTP folder listing, which fails on some networks (incl. Colab).
+  sm_file <- file.path(DATA_DIR, "GSE41273_series_matrix.txt.gz")
+  fetch("https://ftp.ncbi.nlm.nih.gov/geo/series/GSE41nnn/GSE41273/matrix/GSE41273_series_matrix.txt.gz",
+        sm_file, min_bytes = 1e7)
+  if (!is_valid_table_gz(sm_file, "!Series_title")) {
+    to_trash(sm_file); stop("Series matrix download invalid — rerun this script")
+  }
+  es <- getGEO(filename = sm_file, getGPL = FALSE)
   beta <- Biobase::exprs(es)
   storage.mode(beta) <- "double"
   rng <- range(beta, na.rm = TRUE)
@@ -90,7 +117,7 @@ if (!file.exists(meth_rds)) {
   pd <- Biobase::pData(es)
   if (!file.exists(file.path(DATA_DIR, "GSE41273_metadata.csv")))
     write.csv(pd, file.path(DATA_DIR, "GSE41273_metadata.csv"))
-  rm(gse, es, beta); gc(verbose = FALSE)
+  rm(es, beta); gc(verbose = FALSE)
 } else cat("  have GSE41273_methylation_matrix.rds\n")
 
 if (!file.exists(file.path(DATA_DIR, "GSE218676_metadata.csv"))) {
