@@ -46,6 +46,18 @@ VALID_EXCLUDE_PREMUTATION <- TRUE
 VALID_MODE                <- "pooled"
 set.seed(42)
 
+# Steps 9-12 (networks, LIONESS, ALPACA) are the slow part. They are
+# checkpointed, so a failure later in Part 2 does not repeat them.
+# Set FXS_REDO_STEP12=TRUE to force a rerun.
+resume12 <- file.exists(ckpt("checkpoint_step12.RData")) &&
+  !env_bool("FXS_REDO_STEP12", "FALSE") &&
+  file.mtime(ckpt("checkpoint_step12.RData")) > file.mtime(ckpt("checkpoint_step8.RData"))
+if (resume12) {
+  cat("Resuming from checkpoint_step12.RData (Steps 9-12 already done)\n")
+  load(ckpt("checkpoint_step12.RData"))
+  source(file.path(Sys.getenv("FXS_REPO", "."), "scripts", "00_config.R"))
+} else {
+
 # ============================================================
 # STEP 9 — NETWORK CONSTRUCTION WITH IGRAPH
 # ============================================================
@@ -475,6 +487,9 @@ ggplot(head(alpaca_df, 20), aes(x = reorder(Gene, Score), y = Score, fill = Type
 ggsave(file.path(FIG_ALPACA, "ALPACA_top_nodes.png"), width = 8, height = 6, dpi = 300)
 
 cat("Step 12 done\n")
+save.image(ckpt("checkpoint_step12.RData"))
+cat("checkpoint_step12.RData saved\n")
+}   # end of Steps 9-12 block
 
 # ============================================================
 # STEP 13 — FUNCTIONAL ENRICHMENT
@@ -1056,15 +1071,19 @@ run_rrho_manual <- function(rank1, rank2, genes, step = NULL) {
   list(matrix = mat, cuts = cuts, n = n)
 }
 
-if (requireNamespace("RRHO2", quietly = TRUE)) {
+rrho2_ok <- requireNamespace("RRHO2", quietly = TRUE) &&
+  exists("RRHO2_initialize", envir = asNamespace("RRHO2"), inherits = FALSE)
+if (!rrho2_ok && requireNamespace("RRHO2", quietly = TRUE))
+  cat("Installed RRHO2 lacks RRHO2_initialize — using the built-in RRHO instead.\n")
+if (rrho2_ok) {
   cat("\nRunning RRHO2...\n")
-  rrho_obj <- RRHO2::RRHO2_initialize(
+  rrho_obj <- getFromNamespace("RRHO2_initialize", "RRHO2")(
     data.frame(Gene = primary_shared$Gene, Value = primary_shared$rank_metric),
     data.frame(Gene = valid_shared$Gene,   Value = valid_shared$rank_metric),
     labels = c("Organoids (GSE146339)", "NPC/B-cell (GSE218676)"),
     log10.ind = TRUE)
   png(file.path(FIG_VALID, "RRHO2_heatmap.png"), width = 2000, height = 2000, res = 250)
-  RRHO2::RRHO2_heatmap(rrho_obj); dev.off()
+  getFromNamespace("RRHO2_heatmap", "RRHO2")(rrho_obj); dev.off()
   rrho_max <- max(rrho_obj$hypermat, na.rm = TRUE)
   cat("RRHO2 peak -log10(p):", round(rrho_max, 2), "\n")
 } else {
