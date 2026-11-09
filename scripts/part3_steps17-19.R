@@ -1,5 +1,5 @@
 # ============================================================
-# FXS PIPELINE v4 — PART 3 of 3 : STEPS 17–19
+# FXS PIPELINE v5 — PART 3 of 3 : STEPS 17–19
 # Permutation nulls, weighted centrality, in silico validation
 #
 # Requires: checkpoint_step16.RData (from part 2)
@@ -11,8 +11,11 @@
 #   - Step 17A attaches empirical p by matrix indexing rather than
 #     melting a multi-million-row matrix and left_join-ing it, which
 #     transiently held three copies
-#   - RUN_PANDA_NULL defaults FALSE: run it separately once the rest
-#     of Step 17 completes
+#   - 17B (PANDA null) lives in 17b-run.R
+#
+# v5: pooled permutation nulls (v4's per-edge nulls could not pass BH by
+# construction); every null loop is resumable after a disconnect;
+# timepoint-stratified LIONESS bootstrap.
 # ============================================================
 
 library(tidyverse)
@@ -27,63 +30,27 @@ library(igraph)
 library(httr)
 library(jsonlite)
 
-# ------------------------------------------------------------
-# PATHS  (relative to the repo root)
-# ------------------------------------------------------------
-setwd("~/Desktop/final report")
-
-DATA_DIR        <- "data"
-CHECKPOINTS_DIR <- "checkpoints"
-NETWORKS_DIR    <- "networks"
-
-RESULTS_ALPACA  <- file.path("results", "ALPACA")
-RESULTS_DE      <- file.path("results", "DE")
-RESULTS_GENIE3  <- file.path("results", "GENIE3")
-RESULTS_LIONESS <- file.path("results", "LIONESS")
-RESULTS_METH    <- file.path("results", "methylation")
-RESULTS_OTHER   <- file.path("results", "other")
-RESULTS_PANDA   <- file.path("results", "PANDA")
-RESULTS_VALID   <- file.path("results", "validation")
-
-FIG_ALPACA  <- file.path("figures", "ALPACA")
-FIG_DE      <- file.path("figures", "DE")
-FIG_GENIE3  <- file.path("figures", "GENIE3")
-FIG_LIONESS <- file.path("figures", "LIONESS")
-FIG_METH    <- file.path("figures", "methylation")
-FIG_OTHER   <- file.path("figures", "other")
-FIG_PANDA   <- file.path("figures", "PANDA")
-FIG_VALID   <- file.path("figures", "validation")
-
-# make sure every output folder exists
-for (d in c(DATA_DIR, CHECKPOINTS_DIR, NETWORKS_DIR,
-            RESULTS_ALPACA, RESULTS_DE, RESULTS_GENIE3, RESULTS_LIONESS,
-            RESULTS_METH, RESULTS_OTHER, RESULTS_PANDA, RESULTS_VALID,
-            FIG_ALPACA, FIG_DE, FIG_GENIE3, FIG_LIONESS, FIG_METH,
-            FIG_OTHER, FIG_PANDA, FIG_VALID)) {
-  if (!dir.exists(d)) dir.create(d, recursive = TRUE)
-}
-load(file.path(CHECKPOINTS_DIR, "checkpoint_step16.RData"))
+source(file.path(Sys.getenv("FXS_REPO", "."), "scripts", "00_config.R"))
+load(ckpt("checkpoint_step16.RData"))
+source(file.path(Sys.getenv("FXS_REPO", "."), "scripts", "00_config.R"))
 cat("Checkpoint loaded. Objects:", length(ls()), "\n")
-
-# ------------------------------------------------------------
-# CONFIG — tune down first, raise once it completes
-# ------------------------------------------------------------
-
-N_PERM_GENIE3  <- 50      # 100 if memory allows
-N_TREES_PERM   <- 250
-N_PERM_PANDA   <- 20
-N_PERM_ALPACA  <- 50
-N_BOOT_LIONESS <- 1000
-N_CORES        <- 2       # forking multiplies memory; keep low
-RUN_PANDA_NULL <- FALSE   # TRUE only after 17A/C/D succeed
-set.seed(42)
+log_session("part3")
 
 cat("\n=== STEP 17: Network significance and robustness ===\n")
 
 # ---- 17A: GENIE3 PERMUTATION NULL ----
 # GENIE3 never sees the FXS/Control labels, so permuting labels is a
-# no-op. The correct null shuffles each gene's expression vector
-# independently, destroying co-expression while preserving marginals.
+# no-op. The null shuffles each gene's expression vector independently,
+# destroying co-expression while preserving marginals.
+#
+# v5: POOLED null. v4 gave each edge p = (#perms with w_null >= w + 1)/51,
+# so min p = 0.0196 and BH over ~1.7M edges could never pass: "0 edges at
+# FDR < 0.05" was certain before the analysis ran. Because GENIE3 weights
+# are normalised per target over the same regulator set, they are on a
+# common scale; each observed edge is compared with the pooled null of
+# all edges x all permutations (resolution ~1e-8). The per-edge v4
+# statistic is still computed and reported for comparison.
+# Resumable: state is written after every permutation.
 
 cat("\n--- 17A: GENIE3 permutation null (", N_PERM_GENIE3, "permutations) ---\n")
 
@@ -91,60 +58,72 @@ permute_rows <- function(m) {
   out <- t(apply(m, 1, sample)); dimnames(out) <- dimnames(m); out
 }
 
-exceed_count <- matrix(0L, nrow = nrow(genie3_weights),
-                       ncol = ncol(genie3_weights),
-                       dimnames = dimnames(genie3_weights))
-null_pool <- numeric(0)
+g3_state_file <- ckpt("genie3_null_state.rds")
+if (file.exists(g3_state_file)) {
+  g3 <- readRDS(g3_state_file)
+  cat("Resuming GENIE3 null from permutation", g3$done + 1, "\n")
+} else {
+  g3 <- list(done = 0,
+             hist = make_null_hist(lo = -12, hi = 0, log = TRUE),
+             exceed = matrix(0L, nrow = nrow(genie3_weights), ncol = ncol(genie3_weights),
+                             dimnames = dimnames(genie3_weights)),
+             sample = numeric(0))
+}
 
-t0 <- Sys.time()
-for (p in seq_len(N_PERM_GENIE3)) {
-  if (p %% 10 == 0 || p == 1)
-    cat("  permutation", p, "/", N_PERM_GENIE3, "| elapsed",
-        round(difftime(Sys.time(), t0, units = "mins"), 1), "min\n")
+t0 <- Sys.time(); g3_start <- g3$done
+while (g3$done < N_PERM_GENIE3) {
+  p <- g3$done + 1
+  set.seed(2000 + p)
   w_perm <- GENIE3(permute_rows(expr_subset), regulators = tf_in_data,
                    nTrees = N_TREES_PERM, nCores = N_CORES, verbose = FALSE)
-  w_perm <- w_perm[rownames(genie3_weights), colnames(genie3_weights),
-                   drop = FALSE]
-  exceed_count <- exceed_count + (w_perm >= genie3_weights)
-  null_pool <- c(null_pool, sample(as.numeric(w_perm),
-                                   size = min(50000, length(w_perm))))
-  rm(w_perm); gc(verbose = FALSE)          # release before next allocation
+  w_perm <- w_perm[rownames(genie3_weights), colnames(genie3_weights), drop = FALSE]
+  g3$exceed <- g3$exceed + (w_perm >= genie3_weights)
+  wv <- as.numeric(w_perm); wv <- wv[wv > 0]
+  g3$hist   <- add_to_null_hist(g3$hist, wv)
+  g3$sample <- c(g3$sample, sample(wv, min(50000, length(wv))))
+  g3$done   <- p
+  saveRDS(g3, g3_state_file)
+  el <- as.numeric(difftime(Sys.time(), t0, units = "mins"))
+  cat(sprintf("  permutation %d/%d | %.1f min this session | ETA %.0f min\n",
+              p, N_PERM_GENIE3, el, el / (p - g3_start) * (N_PERM_GENIE3 - p)))
+  rm(w_perm, wv); gc(verbose = FALSE)
 }
-cat("Complete in", round(difftime(Sys.time(), t0, units = "mins"), 1), "min\n")
-
-genie3_emp_p <- (exceed_count + 1) / (N_PERM_GENIE3 + 1)
-rm(exceed_count); gc(verbose = FALSE)
-
-null_q95 <- quantile(null_pool, 0.95)
-null_q99 <- quantile(null_pool, 0.99)
-cat("Null 95th pct:", signif(null_q95, 4),
-    "| 99th pct:", signif(null_q99, 4), "\n")
+null_pool <- g3$sample
+null_q95  <- null_hist_quantile(g3$hist, 0.95)
+null_q99  <- null_hist_quantile(g3$hist, 0.99)
+cat("Null 95th pct:", signif(null_q95, 4), "| 99th pct:", signif(null_q99, 4), "\n")
 cat("Observed edges above q95:", sum(genie3_weights >= null_q95),
     "| above q99:", sum(genie3_weights >= null_q99), "\n")
 
-# Matrix indexing instead of melt + left_join. The old version built a
-# data frame with one row per matrix cell and held two copies during
-# the join — the single largest allocation in the pipeline.
-idx <- cbind(match(as.character(edge_list_genie3$Target), rownames(genie3_emp_p)),
-             match(as.character(edge_list_genie3$TF),     colnames(genie3_emp_p)))
+idx <- cbind(match(edge_list_genie3$TF,     rownames(genie3_weights)),
+             match(edge_list_genie3$Target, colnames(genie3_weights)))
+stopifnot(!anyNA(idx))
 
 edge_list_genie3_sig <- edge_list_genie3
-edge_list_genie3_sig$emp_p        <- genie3_emp_p[idx]
-edge_list_genie3_sig$emp_FDR      <- p.adjust(edge_list_genie3_sig$emp_p,
-                                              method = "BH")
-edge_list_genie3_sig$above_null95 <- edge_list_genie3_sig$Weight >= null_q95
-edge_list_genie3_sig$above_null99 <- edge_list_genie3_sig$Weight >= null_q99
+edge_list_genie3_sig$emp_p           <- null_hist_p(g3$hist, edge_list_genie3_sig$Weight)
+edge_list_genie3_sig$emp_FDR         <- p.adjust(edge_list_genie3_sig$emp_p, method = "BH")
+edge_list_genie3_sig$emp_p_peredge   <- (g3$exceed[idx] + 1) / (g3$done + 1)
+edge_list_genie3_sig$emp_FDR_peredge <- p.adjust(edge_list_genie3_sig$emp_p_peredge, method = "BH")
+edge_list_genie3_sig$above_null95    <- edge_list_genie3_sig$Weight >= null_q95
+edge_list_genie3_sig$above_null99    <- edge_list_genie3_sig$Weight >= null_q99
 edge_list_genie3_sig <- edge_list_genie3_sig[
   order(edge_list_genie3_sig$emp_p, -edge_list_genie3_sig$Weight), ]
-
 rm(idx); gc(verbose = FALSE)
 
-cat("Edges with empirical p < 0.05:",
-    sum(edge_list_genie3_sig$emp_p < 0.05, na.rm = TRUE), "\n")
-cat("Edges with empirical FDR < 0.05:",
-    sum(edge_list_genie3_sig$emp_FDR < 0.05, na.rm = TRUE), "\n")
-cat("NOTE: with this many edges tested, BH is severe. Report the\n")
-cat("nominal and FDR counts honestly rather than only the former.\n")
+genie3_null_summary <- data.frame(
+  Metric = c("Permutations", "Edges tested", "Null values pooled",
+             "Smallest attainable p (per-edge, v4)", "Smallest attainable p (pooled, v5)",
+             "Edges pooled p < 0.05", "Edges pooled FDR < 0.05", "Edges pooled FDR < 0.10",
+             "Edges per-edge p < 0.05", "Edges per-edge FDR < 0.05"),
+  Value = c(g3$done, nrow(edge_list_genie3_sig), g3$hist$n,
+            signif(1 / (g3$done + 1), 3), signif(1 / (g3$hist$n + 1), 3),
+            sum(edge_list_genie3_sig$emp_p < 0.05),
+            sum(edge_list_genie3_sig$emp_FDR < 0.05),
+            sum(edge_list_genie3_sig$emp_FDR < 0.10),
+            sum(edge_list_genie3_sig$emp_p_peredge < 0.05),
+            sum(edge_list_genie3_sig$emp_FDR_peredge < 0.05)))
+print(genie3_null_summary)
+write.csv(genie3_null_summary, file.path(RESULTS_GENIE3, "GENIE3_null_summary.csv"), row.names = FALSE)
 write.csv(edge_list_genie3_sig, file.path(RESULTS_GENIE3, "GENIE3_edge_list_with_null.csv"), row.names = FALSE)
 
 null_plot_df <- rbind(
@@ -173,7 +152,7 @@ ggsave(file.path(FIG_GENIE3, "GENIE3_null_distribution.png"), width = 9, height 
 rm(null_plot_df, null_pool); gc(verbose = FALSE)
 
 genie3_null_filtered <- edge_list_genie3_sig %>%
-  filter(above_null95, emp_p < 0.05)
+  filter(emp_FDR < 0.05)
 cat("GENIE3 edges surviving null filter:", nrow(genie3_null_filtered), "\n")
 if (nrow(genie3_null_filtered) > 0) {
   g_genie3_null <- graph_from_data_frame(
@@ -188,100 +167,13 @@ if (nrow(genie3_null_filtered) > 0) {
 gc(verbose = FALSE)
 
 # ---- 17B: PANDA RANDOMIZED PRIOR ----
-
-if (RUN_PANDA_NULL) {
-  cat("\n--- 17B: PANDA randomized-prior null (", N_PERM_PANDA, "runs) ---\n")
-  
-  randomize_motif_degpres <- function(motif_df) {
-    bg <- graph_from_data_frame(
-      data.frame(from = paste0("TF_", motif_df$TF),
-                 to   = paste0("G_",  motif_df$Gene)), directed = FALSE)
-    bg_rw <- rewire(bg, keeping_degseq(niter = ecount(bg) * 10))
-    el <- as_edgelist(bg_rw)
-    flip <- grepl("^G_", el[, 1])
-    el[flip, ] <- el[flip, c(2, 1)]
-    data.frame(TF = sub("^TF_", "", el[, 1]), Gene = sub("^G_", "", el[, 2]),
-               Score = motif_df$Score[sample(nrow(motif_df))],
-               stringsAsFactors = FALSE)
-  }
-  
-  obs_scores <- setNames(edge_list_panda$Score,
-                         paste(edge_list_panda$TF, edge_list_panda$Target,
-                               sep = "__"))
-  panda_exceed <- setNames(rep(0L, length(obs_scores)), names(obs_scores))
-  panda_null_pool <- numeric(0)
-  
-  for (p in seq_len(N_PERM_PANDA)) {
-    cat("  PANDA null run", p, "/", N_PERM_PANDA, "\n")
-    motif_rand <- randomize_motif_degpres(motif_edgelist)
-    motif_rand <- motif_rand[motif_rand$Gene %in% rownames(expr_final) &
-                               motif_rand$TF %in% rownames(expr_final), ]
-    if (nrow(motif_rand) == 0) next
-    pr <- tryCatch(
-      pandaR::panda(motif = motif_rand, expr = as.data.frame(expr_final),
-                    ppi = ppi_edgelist, alpha = 0.1, hamming = 0.001,
-                    iter = 1000, output = "regulatory", zScale = TRUE,
-                    progress = FALSE, randomize = "None",
-                    cor.method = "pearson", scale.by.present = FALSE,
-                    edgelist = TRUE, remove.missing.ppi = FALSE,
-                    remove.missing.motif = FALSE, remove.missing.genes = FALSE,
-                    mode = "union"),
-      error = function(e) { cat("    failed:", conditionMessage(e), "\n"); NULL })
-    if (is.null(pr)) next
-    rn <- slot(pr, "regNet")
-    null_edges <- setNames(as.numeric(as.character(rn$Score)),
-                           paste(as.character(rn$TF), as.character(rn$Gene),
-                                 sep = "__"))
-    panda_null_pool <- c(panda_null_pool,
-                         sample(null_edges, min(50000, length(null_edges))))
-    common <- intersect(names(obs_scores), names(null_edges))
-    panda_exceed[common] <- panda_exceed[common] +
-      (null_edges[common] >= obs_scores[common])
-    rm(pr, rn, null_edges); gc(verbose = FALSE)
-  }
-  
-  panda_emp_p <- (panda_exceed + 1) / (N_PERM_PANDA + 1)
-  panda_null_q95 <- quantile(panda_null_pool, 0.95, na.rm = TRUE)
-  
-  edge_list_panda_sig <- edge_list_panda %>%
-    mutate(Edge = paste(TF, Target, sep = "__"),
-           emp_p = panda_emp_p[Edge],
-           emp_FDR = p.adjust(panda_emp_p[Edge], method = "BH"),
-           above_null95 = Score >= panda_null_q95) %>%
-    arrange(emp_p, desc(Score))
-  
-  cat("PANDA null 95th pct:", signif(panda_null_q95, 4), "\n")
-  cat("Observed 90th pct was:", signif(panda_threshold, 4), "\n")
-  cat("Edges above randomized-prior null q95:",
-      sum(edge_list_panda_sig$above_null95, na.rm = TRUE), "\n")
-  cat("INTERPRET: if the null q95 sits close to the observed 90th\n")
-  cat("percentile, PANDA is largely reproducing its prior rather than\n")
-  cat("adding expression-driven signal. Report this in Limitations.\n")
-  write.csv(edge_list_panda_sig, file.path(RESULTS_PANDA, "PANDA_edge_list_with_null.csv"), row.names = FALSE)
-  
-  panda_cmp <- rbind(
-    data.frame(Score = sample(as.numeric(panda_null_pool),
-                              min(100000, length(panda_null_pool))),
-               Source = "Randomized prior"),
-    data.frame(Score = sample(edge_list_panda$Score,
-                              min(100000, nrow(edge_list_panda))),
-               Source = "Observed"))
-  ggplot(panda_cmp, aes(x = Score, fill = Source)) +
-    geom_density(alpha = 0.5) +
-    geom_vline(xintercept = panda_null_q95, linetype = "dashed") +
-    scale_fill_manual(values = c("Observed" = "#E74C3C",
-                                 "Randomized prior" = "#95A5A6")) +
-    labs(title = "PANDA Edge Scores — Observed vs Randomized Prior",
-         subtitle = paste0(N_PERM_PANDA, " degree-preserving randomizations"),
-         x = "PANDA edge score (z-scaled)", y = "Density") +
-    theme_bw() +
-    theme(plot.title = element_text(hjust = 0.5, face = "bold"),
-          plot.subtitle = element_text(hjust = 0.5))
-  ggsave(file.path(FIG_PANDA, "PANDA_null_distribution.png"), width = 9, height = 6, dpi = 300)
-  rm(panda_cmp, panda_null_pool); gc(verbose = FALSE)
+# Runs as its own script (scripts/17b-run.R, resumable, ~1-2 h). If it
+# has already finished, its results are picked up here for the summary.
+if (file.exists(ckpt("checkpoint_17B_only.RData"))) {
+  load(ckpt("checkpoint_17B_only.RData"))
+  cat("\n--- 17B results loaded from 17b-run.R ---\n"); print(panda_null_summary)
 } else {
-  cat("\n--- 17B skipped (RUN_PANDA_NULL = FALSE) ---\n")
-  cat("Run it separately later: set TRUE, reload the checkpoint, run 17B only.\n")
+  cat("\n--- 17B not run yet: run scripts/17b-run.R ---\n")
 }
 
 # ---- 17C: ALPACA MODULE SIGNIFICANCE ----
@@ -292,7 +184,7 @@ if (RUN_PANDA_NULL) {
 cat("\n--- 17C: ALPACA module significance (", N_PERM_ALPACA, "runs) ---\n")
 
 cat("Probe run to determine pandaToAlpaca output filename...\n")
-probe_stem <- "./tmp_alpaca_probe"
+probe_stem <- file.path(tempdir(), "tmp_alpaca_probe")
 probe_net  <- fxs_net
 probe_net$Score <- fxs_net$Score[sample(nrow(fxs_net))]
 probe <- tryCatch(
@@ -300,7 +192,7 @@ probe <- tryCatch(
                          file.stem = probe_stem, verbose = FALSE),
   error = function(e) { cat("PROBE FAILED:", conditionMessage(e), "\n"); NULL })
 
-probe_files <- list.files(".", pattern = "tmp_alpaca_probe")
+probe_files <- list.files(tempdir(), pattern = "tmp_alpaca_probe")
 cat("Files written by probe:\n"); print(probe_files)
 
 score_file_name <- grep("scores", probe_files, value = TRUE)
@@ -311,20 +203,24 @@ if (length(score_file_name) == 0) {
   score_suffix <- sub("^tmp_alpaca_probe", "", score_file_name[1])
   cat("Score file suffix:", score_suffix, "\n")
 }
-if (length(probe_files) > 0) file.remove(probe_files)
+if (length(probe_files) > 0) file.remove(file.path(tempdir(), probe_files))
 
-alpaca_null_scores <- list()
+al_state_file <- ckpt("alpaca_null_state.rds")
+al_state <- if (file.exists(al_state_file)) readRDS(al_state_file) else
+  list(done = 0, scores = list())
+alpaca_null_scores <- al_state$scores
 n_failed <- 0
+if (al_state$done > 0) cat("Resuming ALPACA null from run", al_state$done + 1, "\n")
 
 if (!is.na(score_suffix)) {
-  for (p in seq_len(N_PERM_ALPACA)) {
+  for (p in seq_len(N_PERM_ALPACA)[seq_len(N_PERM_ALPACA) > al_state$done]) {
     if (p %% 10 == 0 || p == 1)
       cat("  ALPACA null run", p, "/", N_PERM_ALPACA, "\n")
-    
+    set.seed(3000 + p)
     fxs_null <- fxs_net
     fxs_null$Score <- fxs_net$Score[sample(nrow(fxs_net))]
     
-    stem <- paste0("./tmp_alpaca_null_", p)
+    stem <- file.path(tempdir(), paste0("tmp_alpaca_null_", p))
     ar <- tryCatch(
       netZooR::pandaToAlpaca(panda.net1 = fxs_null, panda.net2 = control_net,
                              file.stem = stem, verbose = FALSE),
@@ -339,8 +235,10 @@ if (!is.na(score_suffix)) {
                        col.names = c("Node", "Score"))
       alpaca_null_scores[[length(alpaca_null_scores) + 1]] <- sc
     }
-    file.remove(list.files(".", pattern = paste0("^tmp_alpaca_null_", p, "[_.]"),
+    file.remove(list.files(tempdir(), pattern = paste0("^tmp_alpaca_null_", p, "[_.]"),
                            full.names = TRUE))
+    al_state <- list(done = p, scores = alpaca_null_scores)
+    saveRDS(al_state, al_state_file)
     rm(ar, fxs_null); gc(verbose = FALSE)
   }
 }
@@ -358,12 +256,21 @@ if (length(alpaca_null_scores) >= 5) {
               n_null = n(), .groups = "drop")
   
   alpaca_sig <- alpaca_df %>% left_join(node_null, by = "Node")
-  alpaca_sig$emp_p <- mapply(function(node, score) {
+  # v4 statistic: node vs its own ~50 null values (min p ~0.02, BH-proof)
+  alpaca_sig$emp_p_pernode <- mapply(function(node, score) {
     nd <- null_split[[node]]
     if (is.null(nd) || length(nd) == 0) return(NA_real_)
     (sum(nd >= score) + 1) / (length(nd) + 1)
   }, alpaca_sig$Node, alpaca_sig$Score)
+  alpaca_sig$emp_FDR_pernode <- p.adjust(alpaca_sig$emp_p_pernode, method = "BH")
+  # v5: node vs the pooled null of all nodes x all runs
+  null_sorted <- sort(null_all$Score)
+  alpaca_sig$emp_p <- (length(null_sorted) -
+                         findInterval(alpaca_sig$Score, null_sorted, left.open = TRUE) + 1) /
+                      (length(null_sorted) + 1)
   alpaca_sig$emp_FDR <- p.adjust(alpaca_sig$emp_p, method = "BH")
+  cat("Pooled ALPACA null values:", length(null_sorted),
+      "| smallest attainable p:", signif(1 / (length(null_sorted) + 1), 3), "\n")
   alpaca_sig$z_vs_null <- (alpaca_sig$Score - alpaca_sig$null_mean) /
     ifelse(is.na(alpaca_sig$null_sd) | alpaca_sig$null_sd == 0, NA,
            alpaca_sig$null_sd)
@@ -411,7 +318,7 @@ if (length(alpaca_null_scores) >= 5) {
           plot.subtitle = element_text(hjust = 0.5))
   ggsave(file.path(FIG_ALPACA, "ALPACA_module_significance.png"), width = 8, height = 6, dpi = 300)
   
-  rm(null_all, null_split, alpaca_null_scores); gc(verbose = FALSE)
+  rm(null_all, null_split, null_sorted, alpaca_null_scores); gc(verbose = FALSE)
 } else {
   cat("Too few successful null runs — do not report ALPACA significance.\n")
 }
@@ -420,15 +327,19 @@ if (length(alpaca_null_scores) >= 5) {
 
 cat("\n--- 17D: LIONESS bootstrap (", N_BOOT_LIONESS, "replicates) ---\n")
 
-lioness_mat <- as.matrix(lioness_df)
+# v5: resampling is stratified by timepoint x condition, so every
+# bootstrap replicate keeps the D28/D105 balance of the design.
 obs_prop_up <- mean(rowMeans(lioness_mat[, fxs_cols, drop = FALSE]) >
                       rowMeans(lioness_mat[, control_cols, drop = FALSE]))
 obs_mean_diff <- mean(rowMeans(lioness_mat[, fxs_cols, drop = FALSE]) -
                         rowMeans(lioness_mat[, control_cols, drop = FALSE]))
 
+strat_sample <- function(cols) unlist(lapply(
+  split(cols, as.character(timepoint[cols])),
+  function(x) x[sample.int(length(x), length(x), replace = TRUE)]), use.names = FALSE)
 boot_stats <- t(replicate(N_BOOT_LIONESS, {
-  f  <- sample(fxs_cols,     length(fxs_cols),     replace = TRUE)
-  c_ <- sample(control_cols, length(control_cols), replace = TRUE)
+  f  <- strat_sample(fxs_cols)
+  c_ <- strat_sample(control_cols)
   fm <- rowMeans(lioness_mat[, f,  drop = FALSE])
   cm <- rowMeans(lioness_mat[, c_, drop = FALSE])
   c(prop_up = mean(fm > cm), mean_diff = mean(fm - cm))
@@ -482,8 +393,9 @@ cat("Step 17 done\n")
 cat("\n=== STEP 18: Weighted degree and module-local centrality ===\n")
 
 # ---- 18A: WEIGHT-BASED CENTRALITY ----
-# GENIE3 normalises each regulator's weights to sum to 1, so summed
-# weight carries no information. Mean and max edge weight are used.
+# v5: with the orientation fixed, weights are normalised per TARGET, so
+# a TF's summed weight (weighted out-degree) is informative again — the
+# v4 "Sum_Weight = 1 for every TF" artefact came from the swapped columns.
 
 cat("\n--- 18A: Raw vs weight-based centrality ---\n")
 
@@ -504,7 +416,7 @@ genie3_strength <- edge_list_genie3 %>%
 
 cat("Sum_Weight range across TFs:",
     round(range(genie3_strength$Sum_Weight), 4), "\n")
-cat("(All near 1 — GENIE3 normalises per regulator. Using mean/max.)\n\n")
+cat("(v5: should vary across TFs; all ~1 would indicate swapped columns)\n\n")
 
 cat("Top 20 TFs by MEAN edge weight (GENIE3):\n")
 print(as.data.frame(head(genie3_strength[, c("TF","Raw_OutDegree",

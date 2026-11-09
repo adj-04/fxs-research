@@ -1,8 +1,16 @@
 # ============================================================
-# STEP 17B — PANDA RANDOMIZED-PRIOR NULL (standalone run)
-# Run in a FRESH R session. Loads checkpoint_step16.RData only —
-# lighter than step19, avoids carrying GENIE3/ALPACA null objects
-# in memory while PANDA reruns 20x.
+# FXS PIPELINE v5 — STEP 17B: PANDA randomized-prior null
+# Run as its own Rscript call after part 2. Loads checkpoint_step16.
+#
+# v5 changes
+#  * Pooled null. v4 gave each edge an empirical p of
+#    (#runs with null >= obs + 1) / 21, so the smallest possible p was
+#    0.048 and no edge could ever pass BH — "0 at FDR" was guaranteed
+#    by the design, not evidence of absent signal. v5 compares each
+#    observed edge with the pooled distribution of every null edge
+#    from every run (resolution ~ 1 / (runs x edges)).
+#  * Resumable: state is saved after every run, so a Colab disconnect
+#    costs at most one PANDA run. Rerun the same command to continue.
 # ============================================================
 
 library(pandaR)
@@ -10,49 +18,11 @@ library(igraph)
 library(dplyr)
 library(ggplot2)
 
-# ------------------------------------------------------------
-# PATHS  (relative to the repo root)
-# ------------------------------------------------------------
-setwd("~/Desktop/final report")
-
-DATA_DIR        <- "data"
-CHECKPOINTS_DIR <- "checkpoints"
-NETWORKS_DIR    <- "networks"
-
-RESULTS_ALPACA  <- file.path("results", "ALPACA")
-RESULTS_DE      <- file.path("results", "DE")
-RESULTS_GENIE3  <- file.path("results", "GENIE3")
-RESULTS_LIONESS <- file.path("results", "LIONESS")
-RESULTS_METH    <- file.path("results", "methylation")
-RESULTS_OTHER   <- file.path("results", "other")
-RESULTS_PANDA   <- file.path("results", "PANDA")
-RESULTS_VALID   <- file.path("results", "validation")
-
-FIG_ALPACA  <- file.path("figures", "ALPACA")
-FIG_DE      <- file.path("figures", "DE")
-FIG_GENIE3  <- file.path("figures", "GENIE3")
-FIG_LIONESS <- file.path("figures", "LIONESS")
-FIG_METH    <- file.path("figures", "methylation")
-FIG_OTHER   <- file.path("figures", "other")
-FIG_PANDA   <- file.path("figures", "PANDA")
-FIG_VALID   <- file.path("figures", "validation")
-
-# make sure every output folder exists
-for (d in c(DATA_DIR, CHECKPOINTS_DIR, NETWORKS_DIR,
-            RESULTS_ALPACA, RESULTS_DE, RESULTS_GENIE3, RESULTS_LIONESS,
-            RESULTS_METH, RESULTS_OTHER, RESULTS_PANDA, RESULTS_VALID,
-            FIG_ALPACA, FIG_DE, FIG_GENIE3, FIG_LIONESS, FIG_METH,
-            FIG_OTHER, FIG_PANDA, FIG_VALID)) {
-  if (!dir.exists(d)) dir.create(d, recursive = TRUE)
-}
-load(file.path(CHECKPOINTS_DIR, "checkpoint_step16.RData"))
-cat("Checkpoint loaded. Objects:", length(ls()), "\n")
-
-N_PERM_PANDA   <- 20
-N_CORES        <- 2
-set.seed(42)
-
-cat("\n--- 17B: PANDA randomized-prior null (", N_PERM_PANDA, "runs) ---\n")
+source(file.path(Sys.getenv("FXS_REPO", "."), "scripts", "00_config.R"))
+load(ckpt("checkpoint_step16.RData"))
+source(file.path(Sys.getenv("FXS_REPO", "."), "scripts", "00_config.R"))
+log_session("part17b")
+cat("Checkpoint loaded.\n")
 
 randomize_motif_degpres <- function(motif_df) {
   bg <- graph_from_data_frame(
@@ -67,22 +37,31 @@ randomize_motif_degpres <- function(motif_df) {
              stringsAsFactors = FALSE)
 }
 
-obs_scores <- setNames(edge_list_panda$Score,
-                       paste(edge_list_panda$TF, edge_list_panda$Target, sep = "__"))
-panda_exceed    <- setNames(rep(0L, length(obs_scores)), names(obs_scores))
-panda_null_pool <- numeric(0)
+obs_edge   <- paste(edge_list_panda$TF, edge_list_panda$Target, sep = "__")
+obs_scores <- edge_list_panda$Score
+
+state_file <- ckpt("panda_null_state.rds")
+if (file.exists(state_file)) {
+  st <- readRDS(state_file)
+  cat("Resuming PANDA null from run", st$done + 1, "/", N_PERM_PANDA, "\n")
+} else {
+  st <- list(done = 0,
+             hist = make_null_hist(lo = -60, hi = 60, log = FALSE),
+             exceed = integer(length(obs_scores)),   # v4-style per-edge counts
+             sample = numeric(0), n_ok = 0)
+}
 
 t0 <- Sys.time()
-for (p in seq_len(N_PERM_PANDA)) {
+while (st$done < N_PERM_PANDA) {
+  p <- st$done + 1
+  set.seed(1000 + p)                     # reproducible per run, resume-safe
   cat("  PANDA null run", p, "/", N_PERM_PANDA,
       "| elapsed", round(difftime(Sys.time(), t0, units = "mins"), 1), "min\n")
-  
+
   motif_rand <- randomize_motif_degpres(motif_edgelist)
   motif_rand <- motif_rand[motif_rand$Gene %in% rownames(expr_final) &
                              motif_rand$TF %in% rownames(expr_final), ]
-  if (nrow(motif_rand) == 0) next
-  
-  pr <- tryCatch(
+  pr <- if (nrow(motif_rand) == 0) NULL else tryCatch(
     pandaR::panda(motif = motif_rand, expr = as.data.frame(expr_final),
                   ppi = ppi_edgelist, alpha = 0.1, hamming = 0.001,
                   iter = 1000, output = "regulatory", zScale = TRUE,
@@ -92,67 +71,65 @@ for (p in seq_len(N_PERM_PANDA)) {
                   remove.missing.motif = FALSE, remove.missing.genes = FALSE,
                   mode = "union"),
     error = function(e) { cat("    failed:", conditionMessage(e), "\n"); NULL })
-  if (is.null(pr)) next
-  
-  rn <- slot(pr, "regNet")
-  null_edges <- setNames(as.numeric(as.character(rn$Score)),
-                         paste(as.character(rn$TF), as.character(rn$Gene), sep = "__"))
-  panda_null_pool <- c(panda_null_pool,
-                       sample(null_edges, min(50000, length(null_edges))))
-  common <- intersect(names(obs_scores), names(null_edges))
-  panda_exceed[common] <- panda_exceed[common] +
-    (null_edges[common] >= obs_scores[common])
-  
-  rm(pr, rn, null_edges); gc(verbose = FALSE)   # release before next run
+
+  if (!is.null(pr)) {
+    rn <- slot(pr, "regNet")
+    null_scores <- as.numeric(as.character(rn$Score))
+    null_ids    <- paste(as.character(rn$TF), as.character(rn$Gene), sep = "__")
+    st$hist   <- add_to_null_hist(st$hist, null_scores)
+    st$sample <- c(st$sample, sample(null_scores, min(50000, length(null_scores))))
+    m <- match(obs_edge, null_ids)
+    hit <- !is.na(m)
+    st$exceed[hit] <- st$exceed[hit] + (null_scores[m[hit]] >= obs_scores[hit])
+    st$n_ok <- st$n_ok + 1
+    rm(pr, rn, null_scores, null_ids, m, hit)
+  }
+  st$done <- p
+  saveRDS(st, state_file)
+  gc(verbose = FALSE)
 }
-cat("PANDA null complete in",
-    round(difftime(Sys.time(), t0, units = "mins"), 1), "min\n")
+cat("PANDA null complete:", st$n_ok, "successful runs\n")
 
-# ---- Extract results and save immediately (before plotting) ----
-
-panda_emp_p    <- (panda_exceed + 1) / (N_PERM_PANDA + 1)
-panda_null_q95 <- quantile(panda_null_pool, 0.95, na.rm = TRUE)
-
+panda_null_q95 <- null_hist_quantile(st$hist, 0.95)
 edge_list_panda_sig <- edge_list_panda %>%
-  mutate(Edge = paste(TF, Target, sep = "__"),
-         emp_p = panda_emp_p[Edge],
-         emp_FDR = p.adjust(panda_emp_p[Edge], method = "BH"),
-         above_null95 = Score >= panda_null_q95) %>%
-  arrange(emp_p, desc(Score))
+  mutate(Edge          = obs_edge,
+         emp_p_pooled  = null_hist_p(st$hist, Score),
+         emp_FDR_pooled = p.adjust(emp_p_pooled, method = "BH"),
+         emp_p_peredge = (st$exceed + 1) / (st$n_ok + 1),       # v4 statistic
+         emp_FDR_peredge = p.adjust(emp_p_peredge, method = "BH"),
+         above_null95  = Score >= panda_null_q95) %>%
+  arrange(emp_p_pooled, desc(Score))
 
-cat("PANDA null 95th pct:", signif(panda_null_q95, 4), "\n")
-cat("Observed 90th pct was:", signif(panda_threshold, 4), "\n")
-cat("Edges above randomized-prior null q95:",
-    sum(edge_list_panda_sig$above_null95, na.rm = TRUE), "\n")
-cat("Edges with empirical FDR < 0.05:",
-    sum(edge_list_panda_sig$emp_FDR < 0.05, na.rm = TRUE), "\n")
-cat("INTERPRET: if the null q95 sits close to the observed 90th\n")
-cat("percentile, PANDA is largely reproducing its prior rather than\n")
-cat("adding expression-driven signal. Report this in Limitations.\n")
-
+panda_null_summary <- data.frame(
+  Metric = c("Null runs", "Null edges pooled", "Null q95", "Observed 90th pct",
+             "Smallest attainable p (per-edge, v4)", "Smallest attainable p (pooled, v5)",
+             "Edges pooled p < 0.05", "Edges pooled FDR < 0.05",
+             "Edges per-edge FDR < 0.05", "Edges above null q95"),
+  Value = c(st$n_ok, st$hist$n, signif(panda_null_q95, 4), signif(panda_threshold, 4),
+            signif(1 / (st$n_ok + 1), 3), signif(1 / (st$hist$n + 1), 3),
+            sum(edge_list_panda_sig$emp_p_pooled < 0.05),
+            sum(edge_list_panda_sig$emp_FDR_pooled < 0.05),
+            sum(edge_list_panda_sig$emp_FDR_peredge < 0.05),
+            sum(edge_list_panda_sig$above_null95)))
+print(panda_null_summary)
+write.csv(panda_null_summary, file.path(RESULTS_PANDA, "PANDA_null_summary.csv"), row.names = FALSE)
 write.csv(edge_list_panda_sig, file.path(RESULTS_PANDA, "PANDA_edge_list_with_null.csv"), row.names = FALSE)
 
-save(edge_list_panda_sig, panda_null_pool, panda_null_q95, panda_emp_p,
-     file = file.path(CHECKPOINTS_DIR, "checkpoint_17B_only.RData"))
-cat("Saved checkpoint_17B_only.RData\n")
-
-# ---- Plot ----
+panda_null_pool <- st$sample
+save(edge_list_panda_sig, panda_null_pool, panda_null_q95, panda_null_summary,
+     file = ckpt("checkpoint_17B_only.RData"))
 
 panda_cmp <- rbind(
-  data.frame(Score = sample(as.numeric(panda_null_pool),
-                            min(100000, length(panda_null_pool))),
+  data.frame(Score = sample(panda_null_pool, min(100000, length(panda_null_pool))),
              Source = "Randomized prior"),
-  data.frame(Score = sample(edge_list_panda$Score,
-                            min(100000, nrow(edge_list_panda))),
+  data.frame(Score = sample(edge_list_panda$Score, min(100000, nrow(edge_list_panda))),
              Source = "Observed"))
-
 ggplot(panda_cmp, aes(x = Score, fill = Source)) +
   geom_density(alpha = 0.5) +
   geom_vline(xintercept = panda_null_q95, linetype = "dashed") +
-  scale_fill_manual(values = c("Observed" = "#E74C3C",
-                               "Randomized prior" = "#95A5A6")) +
+  scale_fill_manual(values = c("Observed" = "#E74C3C", "Randomized prior" = "#95A5A6")) +
   labs(title = "PANDA Edge Scores — Observed vs Randomized Prior",
-       subtitle = paste0(N_PERM_PANDA, " degree-preserving randomizations"),
+       subtitle = paste0(st$n_ok, " degree-preserving randomizations | pooled null"),
        x = "PANDA edge score (z-scaled)", y = "Density") +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5, face = "bold"),

@@ -1,11 +1,16 @@
 # ============================================================
-# FXS PIPELINE v4 — PART 2 of 3 : STEPS 9–16
+# FXS PIPELINE v5 — PART 2 of 3 : STEPS 9–16
 # Networks, hubs, LIONESS, ALPACA, enrichment, Cytoscape,
 # validation cohort, cross-cohort concordance
 #
 # Requires: checkpoint_step8.RData (from part 1)
 # Ends by saving checkpoint_step16.RData
 # Then: restart R and run part3_steps17-19.R
+#
+# v5 changes: memory-safe LIONESS matrix; per-edge limma test on LIONESS
+# networks (~ timepoint + condition); GO/KEGG universe fixed for relaxed
+# runs; Cytoscape-free XGMML export; donor-aware limma-voom sensitivity
+# for the validation cohort; shrunken-LFC cross-cohort correlation.
 # ============================================================
 
 library(DESeq2)
@@ -21,48 +26,22 @@ library(clusterProfiler)
 library(pandaR)
 library(netZooR)
 library(igraph)
-library(RCy3)
+if (toupper(Sys.getenv("FXS_RUN_CYTOSCAPE", "FALSE")) == "TRUE") library(RCy3)
+library(limma)
+library(edgeR)
 library(ggvenn)
 
-# ------------------------------------------------------------
-# PATHS  (relative to the repo root)
-# ------------------------------------------------------------
-setwd("~/Desktop/final report")
-
-DATA_DIR        <- "data"
-CHECKPOINTS_DIR <- "checkpoints"
-NETWORKS_DIR    <- "networks"
-
-RESULTS_ALPACA  <- file.path("results", "ALPACA")
-RESULTS_DE      <- file.path("results", "DE")
-RESULTS_GENIE3  <- file.path("results", "GENIE3")
-RESULTS_LIONESS <- file.path("results", "LIONESS")
-RESULTS_METH    <- file.path("results", "methylation")
-RESULTS_OTHER   <- file.path("results", "other")
-RESULTS_PANDA   <- file.path("results", "PANDA")
-RESULTS_VALID   <- file.path("results", "validation")
-
-FIG_ALPACA  <- file.path("figures", "ALPACA")
-FIG_DE      <- file.path("figures", "DE")
-FIG_GENIE3  <- file.path("figures", "GENIE3")
-FIG_LIONESS <- file.path("figures", "LIONESS")
-FIG_METH    <- file.path("figures", "methylation")
-FIG_OTHER   <- file.path("figures", "other")
-FIG_PANDA   <- file.path("figures", "PANDA")
-FIG_VALID   <- file.path("figures", "validation")
-
-# make sure every output folder exists
-for (d in c(DATA_DIR, CHECKPOINTS_DIR, NETWORKS_DIR,
-            RESULTS_ALPACA, RESULTS_DE, RESULTS_GENIE3, RESULTS_LIONESS,
-            RESULTS_METH, RESULTS_OTHER, RESULTS_PANDA, RESULTS_VALID,
-            FIG_ALPACA, FIG_DE, FIG_GENIE3, FIG_LIONESS, FIG_METH,
-            FIG_OTHER, FIG_PANDA, FIG_VALID)) {
-  if (!dir.exists(d)) dir.create(d, recursive = TRUE)
-}
-load(file.path(CHECKPOINTS_DIR, "checkpoint_step8.RData"))
+# Paths/config, then the checkpoint, then config again so that settings
+# from the environment (not the values saved inside the checkpoint) win.
+source(file.path(Sys.getenv("FXS_REPO", "."), "scripts", "00_config.R"))
+load(ckpt("checkpoint_step8.RData"))
+source(file.path(Sys.getenv("FXS_REPO", "."), "scripts", "00_config.R"))
 cat("Checkpoint loaded. Objects:", length(ls()), "\n")
+log_session("part2")
 
-RUN_CYTOSCAPE <- TRUE     # FALSE if Cytoscape is not running
+# Cytoscape cannot run on Colab. v5 writes XGMML/GraphML directly from R;
+# set FXS_RUN_CYTOSCAPE=TRUE locally to also drive a running Cytoscape.
+RUN_CYTOSCAPE <- env_bool("FXS_RUN_CYTOSCAPE", "FALSE")
 VALID_EXCLUDE_PREMUTATION <- TRUE
 VALID_MODE                <- "pooled"
 set.seed(42)
@@ -72,9 +51,9 @@ set.seed(42)
 # ============================================================
 
 cat("\nBuilding GENIE3 network...\n")
-genie3_threshold <- quantile(edge_list_genie3$Weight, 0.90)
+genie3_threshold <- quantile(edge_list_genie3$Weight, GENIE3_EDGE_QUANTILE)
 genie3_filtered  <- edge_list_genie3[edge_list_genie3$Weight >= genie3_threshold, ]
-cat("GENIE3 threshold (90th pct):", signif(genie3_threshold, 4),
+cat("GENIE3 threshold (", 100 * GENIE3_EDGE_QUANTILE, "th pct):", signif(genie3_threshold, 4),
     "| edges:", nrow(genie3_filtered), "\n")
 
 g_genie3 <- graph_from_data_frame(
@@ -276,57 +255,94 @@ lioness_result <- netZooR::lioness(
 cat("LIONESS complete:", length(lioness_result), "networks\n")
 
 sample_names_lioness <- colnames(expr_final)
-lioness_df_list <- lapply(seq_along(lioness_result), function(i) {
-  mat <- lioness_result[[i]]
-  if (is.data.frame(mat)) {
-    edge_id <- paste(as.character(mat$TF), as.character(mat$Gene), sep = "__")
-    scores  <- as.numeric(as.character(mat$Score))
+
+# v5: build the edge x sample matrix column by column. v4 built a long
+# data frame (edges x samples rows of pasted strings) and dcast it,
+# which needs several GB once the target universe grows.
+extract_lioness <- function(x) {
+  if (is.data.frame(x)) {
+    list(id = paste(as.character(x$TF), as.character(x$Gene), sep = "__"),
+         score = as.numeric(as.character(x$Score)))
   } else {
-    melted  <- reshape2::melt(mat)
-    edge_id <- paste(as.character(melted$Var1),
-                     as.character(melted$Var2), sep = "__")
-    scores  <- as.numeric(melted$value)
+    x <- as.matrix(x)
+    list(id = paste(rep(rownames(x), times = ncol(x)),
+                    rep(colnames(x), each = nrow(x)), sep = "__"),
+         score = as.numeric(x))
   }
-  data.frame(Edge = edge_id, Score = scores,
-             Sample = sample_names_lioness[i], stringsAsFactors = FALSE)
-})
-
-lioness_long <- do.call(rbind, lioness_df_list)
-lioness_df   <- reshape2::dcast(lioness_long, Edge ~ Sample, value.var = "Score")
-rownames(lioness_df) <- lioness_df$Edge
-lioness_df$Edge <- NULL
-cat("LIONESS edge matrix:", dim(lioness_df), "\n")
-
-rm(lioness_result, lioness_df_list, lioness_long); gc(verbose = FALSE)
+}
+first <- extract_lioness(lioness_result[[1]])
+lioness_mat <- matrix(NA_real_, nrow = length(first$id),
+                      ncol = length(lioness_result),
+                      dimnames = list(first$id, sample_names_lioness))
+lioness_mat[, 1] <- first$score
+for (i in seq_along(lioness_result)[-1]) {
+  e <- extract_lioness(lioness_result[[i]])
+  lioness_mat[, i] <- if (identical(e$id, first$id)) e$score else
+    e$score[match(first$id, e$id)]
+  lioness_result[i] <- list(NULL)   # free each network once copied
+  rm(e)
+}
+rm(lioness_result, first); gc(verbose = FALSE)
+lioness_mat <- lioness_mat[stats::complete.cases(lioness_mat), , drop = FALSE]
+lioness_df  <- lioness_mat          # name kept for compatibility with part 3
+cat("LIONESS edge matrix:", dim(lioness_mat),
+    sprintf("(%.0f MB)\n", as.numeric(object.size(lioness_mat)) / 1e6))
 
 fxs_cols     <- intersect(names(condition)[condition == "FXS"],
-                          colnames(lioness_df))
+                          colnames(lioness_mat))
 control_cols <- intersect(names(condition)[condition == "Control"],
-                          colnames(lioness_df))
+                          colnames(lioness_mat))
 cat("FXS:", length(fxs_cols), "| Control:", length(control_cols), "\n")
 cat("FXS:", paste(fxs_cols, collapse = ", "), "\n")
 cat("Control:", paste(control_cols, collapse = ", "), "\n")
 if (length(fxs_cols) == 0 || length(control_cols) == 0)
-  stop("Sample name mismatch — check names(condition) vs colnames(lioness_df)")
+  stop("Sample name mismatch — check names(condition) vs colnames(lioness_mat)")
 
-fxs_mean     <- rowMeans(lioness_df[, fxs_cols,     drop = FALSE])
-control_mean <- rowMeans(lioness_df[, control_cols, drop = FALSE])
+fxs_mean     <- rowMeans(lioness_mat[, fxs_cols,     drop = FALSE])
+control_mean <- rowMeans(lioness_mat[, control_cols, drop = FALSE])
 
-diff_df <- data.frame(Edge = rownames(lioness_df), FXS = fxs_mean,
+# ---- v5: per-edge differential test with the timepoint covariate ----
+# LIONESS itself cannot take covariates, but its output can: each edge's
+# 12 sample-specific weights are modelled as ~ timepoint + condition
+# with limma (the approach used in the LIONESS/netZoo papers). The input
+# expression was already timepoint-adjusted (Step 6); keeping timepoint
+# in the edge model removes any residual non-linear stage effect.
+edge_design <- model.matrix(~ timepoint[colnames(lioness_mat)] +
+                              condition[colnames(lioness_mat)])
+colnames(edge_design) <- c("Intercept", "timepointD105", "conditionFXS")
+edge_fit <- eBayes(lmFit(lioness_mat, edge_design))
+edge_tt  <- topTable(edge_fit, coef = "conditionFXS", number = Inf,
+                     sort.by = "none")
+rm(edge_fit); gc(verbose = FALSE)
+
+diff_df <- data.frame(Edge = rownames(lioness_mat), FXS = fxs_mean,
                       Control = control_mean, Diff = fxs_mean - control_mean,
+                      limma_logFC = edge_tt$logFC, limma_t = edge_tt$t,
+                      limma_p = edge_tt$P.Value, limma_FDR = edge_tt$adj.P.Val,
                       stringsAsFactors = FALSE)
+rm(edge_tt)
 diff_df$TF     <- sub("__.*", "", diff_df$Edge)
 diff_df$Target <- sub(".*__", "", diff_df$Edge)
-diff_df <- diff_df[order(abs(diff_df$Diff), decreasing = TRUE), ]
+diff_df <- diff_df[order(diff_df$limma_p), ]
 
 cat("Differential edges:", nrow(diff_df),
     "| FXS >:", sum(diff_df$Diff > 0), "| FXS <:", sum(diff_df$Diff < 0), "\n")
+cat("Edges, condition effect adjusted for timepoint — nominal p<0.05:",
+    sum(diff_df$limma_p < 0.05), "| FDR<0.05:", sum(diff_df$limma_FDR < 0.05),
+    "| FDR<0.10:", sum(diff_df$limma_FDR < 0.10), "\n")
 write.csv(diff_df, file.path(RESULTS_LIONESS, "LIONESS_diff_edges.csv"), row.names = FALSE)
+write.csv(head(diff_df, 5000),
+          file.path(RESULTS_LIONESS, "LIONESS_diff_edges_top5000_limma.csv"), row.names = FALSE)
 
-cat("NOTE: timepoint is NOT adjusted for in LIONESS — no covariate\n")
-cat("mechanism exists. Edge differences confound genotype and stage.\n")
+# p-value histogram: uniform = no signal; spike near 0 = signal
+png(file.path(FIG_LIONESS, "LIONESS_limma_pvalue_hist.png"), width = 1600, height = 1100, res = 200)
+hist(diff_df$limma_p, breaks = 50, col = "#3498DB", border = "white",
+     main = "LIONESS per-edge test (~ timepoint + condition)",
+     xlab = "Nominal p-value, condition effect")
+dev.off()
 
-ggplot(diff_df, aes(x = Control, y = FXS)) +
+plot_idx <- if (nrow(diff_df) > 200000) sample(nrow(diff_df), 200000) else seq_len(nrow(diff_df))
+ggplot(diff_df[plot_idx, ], aes(x = Control, y = FXS)) +
   geom_point(alpha = 0.3, size = 0.5, color = "grey60") +
   geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "red") +
   labs(title = "LIONESS Edge Score Comparison — FXS vs Control",
@@ -337,7 +353,7 @@ ggplot(diff_df, aes(x = Control, y = FXS)) +
         plot.subtitle = element_text(hjust = 0.5))
 ggsave(file.path(FIG_LIONESS, "LIONESS_FXS_vs_Control_scatter.png"), width = 8, height = 6, dpi = 300)
 
-top_edges <- head(diff_df, 20)
+top_edges <- head(diff_df[order(abs(diff_df$Diff), decreasing = TRUE), ], 20)
 top_edges$Label <- paste0(top_edges$TF, " -> ", top_edges$Target)
 ggplot(top_edges, aes(x = reorder(Label, Diff), y = Diff, fill = Diff > 0)) +
   geom_bar(stat = "identity") + coord_flip() +
@@ -376,9 +392,8 @@ if (nrow(known_diff) > 0) {
   ggsave(file.path(FIG_LIONESS, "LIONESS_known_TF_activity.png"), width = 7, height = 5, dpi = 300)
 }
 
-edge_parts <- strsplit(rownames(lioness_df), "__")
-tfs   <- sapply(edge_parts, `[`, 1)
-genes <- sapply(edge_parts, `[`, 2)
+tfs   <- sub("__.*", "", rownames(lioness_mat))
+genes <- sub(".*__", "", rownames(lioness_mat))
 
 fxs_net     <- data.frame(TF = tfs, Gene = genes, Score = fxs_mean,
                           stringsAsFactors = FALSE)
@@ -520,11 +535,15 @@ if (!is.null(top_go_strict)) {
                                                 "pvalue","p.adjust")], 20))
 }
 
-top_go_relaxed <- enrichGO(gene = top_hits, OrgDb = org.Hs.eg.db, ont = "BP",
+# v5: the relaxed runs now use the same universe as the strict runs. v4
+# omitted it, so relaxed terms were tested against the whole genome and
+# partly reflected which genes could enter the network at all.
+top_go_relaxed <- enrichGO(gene = top_hits, universe = background,
+                           OrgDb = org.Hs.eg.db, ont = "BP",
                            pAdjustMethod = "BH", pvalueCutoff = 0.1,
                            qvalueCutoff = 0.2, readable = TRUE)
 top_kegg_relaxed <- tryCatch(
-  enrichKEGG(gene = top_hits, organism = "hsa",
+  enrichKEGG(gene = top_hits, universe = background, organism = "hsa",
              pAdjustMethod = "BH", pvalueCutoff = 0.1),
   error = function(e) NULL)
 
@@ -652,7 +671,74 @@ if (RUN_CYTOSCAPE) {
   cat("filter to fewer nodes or raise the font further.\n")
   
 } else {
-  cat("Step 14 skipped (RUN_CYTOSCAPE = FALSE)\n")
+  # v5: Cytoscape-free export (works on Colab). Same module selection
+  # as above; XGMML is written directly so Cytoscape can open it later.
+  top_module_ids <- alpaca_df %>%
+    group_by(Module) %>%
+    summarise(mean_score = mean(Score), n = n(), .groups = "drop") %>%
+    filter(n >= 5) %>% arrange(desc(mean_score)) %>% head(3) %>% pull(Module)
+  top_nodes <- alpaca_df %>%
+    filter(Module %in% top_module_ids) %>%
+    dplyr::select(Gene, Module, Score, Type) %>%
+    distinct(Gene, .keep_all = TRUE)
+  edge_table <- edge_list_panda %>%
+    filter(TF %in% top_nodes$Gene, Target %in% top_nodes$Gene) %>%
+    dplyr::rename(Gene = Target)
+  node_table <- top_nodes %>%
+    dplyr::rename(id = Gene) %>%
+    mutate(label = id, Module = as.character(Module), Score = round(Score, 4),
+           NodeColor = ifelse(Type == "TF", "#E74C3C", "#3498DB"))
+  cat("Top modules:", top_module_ids, "| nodes:", nrow(node_table),
+      "| edges:", nrow(edge_table), "\n")
+
+  xml_esc <- function(x) gsub("<", "&lt;", gsub(">", "&gt;",
+                gsub("&", "&amp;", gsub("\"", "&quot;", as.character(x)))))
+  set.seed(42)
+  g_mod <- graph_from_data_frame(
+    data.frame(from = edge_table$TF, to = edge_table$Gene, weight = edge_table$Score),
+    directed = TRUE, vertices = node_table %>% dplyr::select(id, everything()))
+  lay <- layout_with_kk(g_mod, weights = NA) * 120
+  node_xml <- vapply(seq_len(vcount(g_mod)), function(i) {
+    v <- V(g_mod)[i]
+    sprintf(paste0('  <node id="%d" label="%s">\n',
+                   '    <att name="Type" type="string" value="%s"/>\n',
+                   '    <att name="Module" type="string" value="%s"/>\n',
+                   '    <att name="Score" type="real" value="%s"/>\n',
+                   '    <graphics type="%s" fill="%s" w="40" h="40" x="%.1f" y="%.1f"/>\n',
+                   '  </node>'),
+            i, xml_esc(v$name), xml_esc(v$Type), xml_esc(v$Module), v$Score,
+            ifelse(v$Type == "TF", "ELLIPSE", "ROUND_RECTANGLE"), v$NodeColor,
+            lay[i, 1], lay[i, 2])
+  }, character(1))
+  el <- as_edgelist(g_mod, names = FALSE)
+  edge_xml <- sprintf(paste0('  <edge source="%d" target="%d" label="%s (pd) %s">\n',
+                             '    <att name="weight" type="real" value="%s"/>\n',
+                             '  </edge>'),
+                      el[, 1], el[, 2], xml_esc(V(g_mod)$name[el[, 1]]),
+                      xml_esc(V(g_mod)$name[el[, 2]]), E(g_mod)$weight)
+  writeLines(c('<?xml version="1.0" encoding="UTF-8"?>',
+               '<graph label="FXS_ALPACA_TopModules" directed="1"',
+               '  xmlns="http://www.cs.rpi.edu/XGMML"',
+               '  xmlns:xlink="http://www.w3.org/1999/xlink">',
+               node_xml, edge_xml, '</graph>'),
+             file.path(NETWORKS_DIR, "FXS_ALPACA_network.xgmml"))
+  write_graph(g_mod, file.path(NETWORKS_DIR, "FXS_ALPACA_network.graphml"), format = "graphml")
+
+  png(file.path(FIG_ALPACA, "FXS_ALPACA_network_final.png"),
+      width = 3000, height = 3000, res = 300)
+  plot(g_mod, layout = lay,
+       vertex.color = V(g_mod)$NodeColor, vertex.frame.color = "white",
+       vertex.shape = ifelse(V(g_mod)$Type == "TF", "circle", "square"),
+       vertex.size = scales::rescale(V(g_mod)$Score, to = c(3, 9)),
+       vertex.label = V(g_mod)$name, vertex.label.cex = 0.35,
+       vertex.label.color = "black", edge.arrow.size = 0.1,
+       edge.color = adjustcolor("grey60", alpha.f = 0.3), edge.width = 0.3,
+       main = "FXS ALPACA top differential modules")
+  dev.off()
+  write.csv(edge_table, file.path(RESULTS_ALPACA, "FXS_ALPACA_edges.csv"), row.names = FALSE)
+  write.csv(node_table, file.path(RESULTS_ALPACA, "FXS_ALPACA_nodes.csv"), row.names = FALSE)
+  rm(g_mod, lay, node_xml, edge_xml, el)
+  cat("Step 14 done (XGMML + GraphML + PNG written without Cytoscape)\n")
 }
 
 # ============================================================
@@ -719,6 +805,7 @@ v_coldata <- data.frame(
   condition = factor(v_meta$genotype, levels = c("Control", "FXS")),
   cell_type = factor(gsub("[^A-Za-z]", "_", v_meta$cell_type)),
   line      = factor(v_meta$line),
+  donor     = factor(v_meta$donor),
   row.names = colnames(v_counts_f))
 
 v_formula <- if (VALID_MODE == "pooled" && nlevels(v_coldata$cell_type) > 1)
@@ -752,6 +839,49 @@ sig_valid <- deg_valid %>%
   arrange(padj)
 write.csv(sig_valid, file.path(RESULTS_VALID, "GSE218676_validation_DEA_significant.csv"))
 cat("Validation DEGs:", nrow(sig_valid), "\n")
+
+# v5: shrunken validation LFCs for the cross-cohort correlation
+v_shr <- lfcShrink(v_dds, coef = "condition_FXS_vs_Control", type = "apeglm", quiet = TRUE)
+deg_valid$log2FC_shrunk <- v_shr[deg_valid$GeneID, "log2FoldChange"]
+rm(v_shr)
+
+# ---- v5: donor-aware sensitivity analysis ----
+# Two donors (FXS_421, NL_18) each contribute two lines (NPC + iPSC), so
+# lines are not independent. DESeq2 has no random effects; limma-voom with
+# duplicateCorrelation treats donor as a blocking factor and gives the
+# effective-n-corrected answer. Agreement with DESeq2 is reported.
+v_cd   <- as.data.frame(colData(v_dds))
+v_dge  <- DGEList(counts(v_dds))
+v_keep_g <- filterByExpr(v_dge, group = v_cd$condition)
+v_dge  <- calcNormFactors(v_dge[v_keep_g, , keep.lib.sizes = FALSE])
+v_des  <- model.matrix(if (nlevels(v_cd$cell_type) > 1) ~ cell_type + condition else ~ condition,
+                       data = v_cd)
+v_voom <- voom(v_dge, v_des)
+v_corr <- duplicateCorrelation(v_voom, v_des, block = v_cd$donor)$consensus.correlation
+v_voom <- voom(v_dge, v_des, block = v_cd$donor, correlation = v_corr)
+v_corr <- duplicateCorrelation(v_voom, v_des, block = v_cd$donor)$consensus.correlation
+v_lfit <- eBayes(lmFit(v_voom, v_des, block = v_cd$donor, correlation = v_corr))
+v_tt   <- topTable(v_lfit, coef = "conditionFXS", number = Inf)
+v_tt$GeneID <- rownames(v_tt); v_tt$Symbol <- id2sym[v_tt$GeneID]
+write.csv(v_tt, file.path(RESULTS_VALID, "GSE218676_validation_limma_donorblock_all.csv"))
+
+sig_valid_limma <- v_tt %>% filter(adj.P.Val < 0.05, abs(logFC) > 1)
+both_tested <- intersect(v_tt$GeneID, deg_valid$GeneID[!is.na(deg_valid$log2FoldChange)])
+donor_sens <- data.frame(
+  Metric = c("Within-donor correlation (consensus)",
+             "DEGs DESeq2 (lines as independent)",
+             "DEGs limma-voom (donor blocked)",
+             "DEGs shared by both", "LFC correlation DESeq2 vs limma (Pearson)",
+             "FMR1 log2FC limma", "FMR1 FDR limma"),
+  Value = c(round(v_corr, 3), nrow(sig_valid), nrow(sig_valid_limma),
+            length(intersect(sig_valid$GeneID, sig_valid_limma$GeneID)),
+            round(cor(v_tt[both_tested, "logFC"],
+                      deg_valid[match(both_tested, deg_valid$GeneID), "log2FoldChange"]), 3),
+            signif(v_tt$logFC[which(v_tt$Symbol == "FMR1")[1]], 4),
+            signif(v_tt$adj.P.Val[which(v_tt$Symbol == "FMR1")[1]], 3)))
+print(donor_sens)
+write.csv(donor_sens, file.path(RESULTS_VALID, "validation_donor_sensitivity.csv"), row.names = FALSE)
+rm(v_dge, v_voom, v_lfit, v_keep_g)
 
 v_fmr1 <- deg_valid[which(deg_valid$Symbol == "FMR1"), ]
 if (nrow(v_fmr1) > 0) {
@@ -845,7 +975,7 @@ primary_rank <- res_df %>%
   mutate(rank_metric = -log10(pvalue) * sign(log2FoldChange)) %>%
   group_by(Symbol) %>% slice_max(abs(rank_metric), n = 1, with_ties = FALSE) %>%
   ungroup() %>%
-  dplyr::select(Gene = Symbol, log2FC = log2FoldChange, pvalue, rank_metric) %>%
+  dplyr::select(Gene = Symbol, log2FC = log2FoldChange, log2FC_shrunk, pvalue, rank_metric) %>%
   as.data.frame()
 cat("Primary cohort testable genes:", nrow(primary_rank), "\n")
 
@@ -854,7 +984,7 @@ valid_rank <- deg_valid %>%
   mutate(rank_metric = -log10(pvalue) * sign(log2FoldChange)) %>%
   group_by(Symbol) %>% slice_max(abs(rank_metric), n = 1, with_ties = FALSE) %>%
   ungroup() %>%
-  dplyr::select(Gene = Symbol, log2FC = log2FoldChange, pvalue, rank_metric) %>%
+  dplyr::select(Gene = Symbol, log2FC = log2FoldChange, log2FC_shrunk, pvalue, rank_metric) %>%
   as.data.frame()
 cat("Validation cohort testable genes:", nrow(valid_rank), "\n")
 
@@ -961,8 +1091,25 @@ if (requireNamespace("RRHO2", quietly = TRUE)) {
 
 lfc_df <- data.frame(Gene = shared_genes,
                      Primary_LFC = primary_shared$log2FC,
-                     Validation_LFC = valid_shared$log2FC) %>%
+                     Validation_LFC = valid_shared$log2FC,
+                     Primary_LFC_shrunk = primary_shared$log2FC_shrunk,
+                     Validation_LFC_shrunk = valid_shared$log2FC_shrunk) %>%
   filter(!is.na(Primary_LFC), !is.na(Validation_LFC))
+
+# v5: the same statistics on apeglm-shrunken LFCs. Unshrunk LFCs of
+# low-count genes are mostly noise and pull r toward 0 regardless of biology.
+lfc_shr <- lfc_df %>% filter(!is.na(Primary_LFC_shrunk), !is.na(Validation_LFC_shrunk))
+pearson_shr  <- cor.test(lfc_shr$Primary_LFC_shrunk, lfc_shr$Validation_LFC_shrunk)
+spearman_shr <- cor.test(lfc_shr$Primary_LFC_shrunk, lfc_shr$Validation_LFC_shrunk,
+                         method = "spearman", exact = FALSE)
+lfc_shr_eff  <- lfc_shr %>% filter(abs(Primary_LFC_shrunk) > 0.1,
+                                   abs(Validation_LFC_shrunk) > 0.1)
+conc_shr_eff <- mean(sign(lfc_shr_eff$Primary_LFC_shrunk) ==
+                       sign(lfc_shr_eff$Validation_LFC_shrunk))
+cat("Shrunken-LFC Pearson r:", round(pearson_shr$estimate, 3),
+    "| Spearman:", round(spearman_shr$estimate, 3),
+    "| sign concordance where both |shrunk LFC|>0.1:",
+    round(100 * conc_shr_eff, 1), "% of", nrow(lfc_shr_eff), "genes\n")
 
 pearson_res  <- cor.test(lfc_df$Primary_LFC, lfc_df$Validation_LFC,
                          method = "pearson")
@@ -1009,13 +1156,20 @@ write.csv(data.frame(
   Metric = c("Shared genes","Pearson r","Pearson p","Spearman rho","Spearman p",
              "Genome-wide sign concordance (%)","Sign concordance |LFC|>0.5 (%)",
              "RRHO peak -log10(p)","Overlap fold enrichment",
-             "Overlap hypergeometric p"),
+             "Overlap hypergeometric p",
+             "Pearson r (shrunken LFC)","Pearson p (shrunken LFC)",
+             "Spearman rho (shrunken LFC)",
+             "Sign concordance, both |shrunk LFC|>0.1 (%)",
+             "Genes with both |shrunk LFC|>0.1"),
   Value = c(nrow(lfc_df), round(pearson_res$estimate, 4), pearson_res$p.value,
             round(spearman_res$estimate, 4), spearman_res$p.value,
             round(global_concordance * 100, 1),
             round(mean(sign(lfc_strong$Primary_LFC) ==
                          sign(lfc_strong$Validation_LFC)) * 100, 1),
-            round(rrho_max, 3), round(fold_enrichment, 3), hyper_p)),
+            round(rrho_max, 3), round(fold_enrichment, 3), hyper_p,
+            round(pearson_shr$estimate, 4), pearson_shr$p.value,
+            round(spearman_shr$estimate, 4),
+            round(100 * conc_shr_eff, 1), nrow(lfc_shr_eff))),
   file.path(RESULTS_VALID, "crossvalidation_concordance_summary.csv"), row.names = FALSE)
 
 cat("Step 16 done\n")
@@ -1026,7 +1180,7 @@ cat("Step 16 done\n")
 
 rm(v_dds, v_res, module_go_results, top_go_strict, top_go_relaxed,
    top_kegg_strict, top_kegg_relaxed, best_go, best_kegg,
-   g_genie3, g_panda, genie3_filtered, panda_filtered)
+   g_genie3, g_panda, genie3_filtered, panda_filtered, lioness_df)
 gc(verbose = FALSE)
 
 save.image(file.path(CHECKPOINTS_DIR, "checkpoint_step16.RData"))

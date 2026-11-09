@@ -16,52 +16,31 @@ Both RNA-seq cohorts use **NCBI-reprocessed gene-level counts** (GRCh38.p13,
 Entrez IDs), so quantification differences cannot account for non-replication
 between them.
 
-## Required input files
+## Running (v5)
 
-Data files are gitignored. Download these into the repository root before
-running:
+### Google Colab (recommended)
+Open `colab/FXS_GRN_v5_Colab.ipynb` in Colab (Python runtime) and run the cells top to
+bottom. It installs R 4.6 / Bioconductor 3.23 as binaries (r2u), fetches every input,
+and writes data, results, checkpoints and logs to Google Drive. Long permutation steps
+are resumable after a disconnect.
 
-**From GEO** (use the "Download RNA-seq counts" link on each series page, not
-the submitter-supplied supplementary archive):
-
-```
-GSE146339_raw_counts_GRCh38.p13_NCBI.tsv.gz
-GSE218676_raw_counts_GRCh38.p13_NCBI.tsv.gz
-Human.GRCh38.p13.annot.tsv.gz
-GSE218676_metadata.csv
-GSE41273_methylation_matrix.csv
-GSE41273_metadata.csv
-```
-
-**External resources:**
-
-```
-9606.protein.links.v12.0.txt      # STRING v12.0, human
-trrust_rawdata.human.tsv          # auto-downloaded by Step 19B if absent
-tf_list.txt                       # included in this repo
-```
-
-## Running
-
-Three scripts, run in order, **restarting R between each**. The split exists
-because Steps 11 (LIONESS) and 17 (permutation nulls) are memory-intensive;
-running everything in one session exhausts RAM on a 16GB machine.
-
+### Locally
 ```bash
-R --vanilla -f part1_steps1-8.R    > part1.log 2>&1   # → checkpoint_step8.RData
-R --vanilla -f part2_steps9-16.R   > part2.log 2>&1   # → checkpoint_step16.RData
-R --vanilla -f part3_steps17-19.R  > part3.log 2>&1
-R --vanilla -f 17b-run.R           > part17b.log 2>&1 # PANDA null, ~85 min
+export FXS_REPO=$PWD FXS_ROOT=$PWD      # FXS_ROOT = where outputs go
+Rscript scripts/01_fetch_data.R         # downloads all inputs once
+Rscript scripts/part1_steps1-8.R        # -> checkpoints/checkpoint_step8.RData
+Rscript scripts/part2_steps9-16.R       # -> checkpoint_step16.RData
+Rscript scripts/part3_steps17-19.R      # resumable nulls -> checkpoint_step19.RData
+Rscript scripts/17b-run.R               # PANDA null, resumable
+Rscript scripts/part4_steps20-22.R      # tissue generality, CollecTRI, summary
+Rscript scripts/14_cytoscape_local.R    # with Cytoscape open: styled figures + .cys
 ```
+Each part is a fresh R process (memory is released between them). Settings live in
+`scripts/00_config.R` and can be overridden with environment variables. See
+`CHANGES.md` for what changed from v4 and why.
 
-`17b-run.R` is Step 17B split out — it reruns PANDA 20× and is slow enough to
-be worth isolating.
-
-**Stop at the FMR1 gate in Step 4.** If FMR1 is not significantly downregulated
-in FXS, the sample labels are wrong and nothing downstream is meaningful.
-
-Set `RUN_CYTOSCAPE <- FALSE` in part 2 unless Cytoscape is running; cap its JVM
-heap in `Cytoscape.vmoptions` or it will reserve all system RAM and compete with R.
+**Stop at the FMR1 gate in Step 4.** If FMR1 is not significantly downregulated in FXS,
+the sample labels are wrong and nothing downstream is meaningful.
 
 ## Pipeline
 
@@ -149,14 +128,14 @@ motif/PPI prior rather than adding expression-driven signal.
    It does not establish causality in FXS and is not equivalent to experimental
    confirmation.
 
-**Note on `GENIE3_weighted_degree.csv`:** GENIE3 normalises each regulator's
-weights to sum to 1, so `Sum_Weight` is 1 for every TF and `Mean_Edge_Weight`
-reduces to 1/degree. Use `Max_Edge_Weight` and `Top1pct_Edges` instead; the mean
-column and its derived ranks are not informative.
+**Note on v4 GENIE3 outputs:** in v4 the GENIE3 regulator and target columns were
+swapped (GENIE3 normalises per target, hence `Sum_Weight = 1` per "TF"). Fixed in v5;
+see `CHANGES.md`.
 
 ## Environment
 
-R 4.6.0, Bioconductor. Core packages: DESeq2, limma, minfi, GENIE3, pandaR,
+R 4.6, Bioconductor 3.23 (exact versions written to `logs/package_versions.csv` and
+`logs/sessionInfo_*.txt` on every run). Core packages: DESeq2, limma, minfi, GENIE3, pandaR,
 netZooR, igraph, clusterProfiler, JASPAR2020, motifmatchr,
 BSgenome.Hsapiens.UCSC.hg38, RCy3. Run `sessionInfo()` for exact versions.
 

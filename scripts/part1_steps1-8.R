@@ -1,9 +1,20 @@
 # ============================================================
-# FXS PIPELINE v4 — PART 1 of 3 : STEPS 1–8
+# FXS PIPELINE v5 — PART 1 of 3 : STEPS 1–8
 # Data loading, DE, methylation, TF prep, GENIE3, PANDA
 #
+# Requires: scripts/01_fetch_data.R to have run once
 # Ends by saving checkpoint_step8.RData
-# Then: restart R and run part2_steps9-16.R
+# Then: restart R (new Rscript call) and run part2_steps9-16.R
+#
+# v5 changes (see CHANGES.md):
+#   4   apeglm-shrunken LFCs added (used for cross-cohort correlation)
+#   5A  blood cell-composition (EpiDISH) adjusted DMP model
+#   6   timepoint removed from the network-inference expression matrix
+#   7   GENIE3 regulator/target columns were SWAPPED in v4 — fixed;
+#       target set expanded from 13 DEGs to a label-independent
+#       top-variance universe
+#   8   STRING read gz-compressed via data.table; motif target pool
+#       chosen by variance (label-independent) instead of DE p-value
 # ============================================================
 
 # ---- Core ----
@@ -38,50 +49,14 @@ library(GENIE3)
 library(pandaR)
 library(igraph)
 
-# ------------------------------------------------------------
-# PATHS  (relative to the repo root)
-# ------------------------------------------------------------
-setwd("~/Desktop/final report")
+# ---- v5 additions ----
+library(apeglm)
+library(EpiDISH)
+library(data.table)
 
-DATA_DIR        <- "data"
-CHECKPOINTS_DIR <- "checkpoints"
-NETWORKS_DIR    <- "networks"
-
-RESULTS_ALPACA  <- file.path("results", "ALPACA")
-RESULTS_DE      <- file.path("results", "DE")
-RESULTS_GENIE3  <- file.path("results", "GENIE3")
-RESULTS_LIONESS <- file.path("results", "LIONESS")
-RESULTS_METH    <- file.path("results", "methylation")
-RESULTS_OTHER   <- file.path("results", "other")
-RESULTS_PANDA   <- file.path("results", "PANDA")
-RESULTS_VALID   <- file.path("results", "validation")
-
-FIG_ALPACA  <- file.path("figures", "ALPACA")
-FIG_DE      <- file.path("figures", "DE")
-FIG_GENIE3  <- file.path("figures", "GENIE3")
-FIG_LIONESS <- file.path("figures", "LIONESS")
-FIG_METH    <- file.path("figures", "methylation")
-FIG_OTHER   <- file.path("figures", "other")
-FIG_PANDA   <- file.path("figures", "PANDA")
-FIG_VALID   <- file.path("figures", "validation")
-
-# make sure every output folder exists
-for (d in c(DATA_DIR, CHECKPOINTS_DIR, NETWORKS_DIR,
-            RESULTS_ALPACA, RESULTS_DE, RESULTS_GENIE3, RESULTS_LIONESS,
-            RESULTS_METH, RESULTS_OTHER, RESULTS_PANDA, RESULTS_VALID,
-            FIG_ALPACA, FIG_DE, FIG_GENIE3, FIG_LIONESS, FIG_METH,
-            FIG_OTHER, FIG_PANDA, FIG_VALID)) {
-  if (!dir.exists(d)) dir.create(d, recursive = TRUE)
-}
-
-# ------------------------------------------------------------
-# CONFIG (shared across all three parts)
-# ------------------------------------------------------------
-
-N_TARGET_POOL  <- 3000
-N_CORES        <- 2          # lowered: forking multiplies memory use
-set.seed(42)
-known_tf <- c("SP1", "NRF1", "TFAP2A", "REST", "SIX3", "FOXG1")
+# Paths, config and helpers (portable: Colab or local)
+source(file.path(Sys.getenv("FXS_REPO", "."), "scripts", "00_config.R"))
+log_session("part1")
 
 annot  <- read.delim(gzfile(file.path(DATA_DIR, "Human.GRCh38.p13.annot.tsv.gz")), header = TRUE,
                      quote = "", check.names = FALSE, stringsAsFactors = FALSE)
@@ -207,6 +182,14 @@ summary(res, alpha = 0.05)
 res_df$GeneID <- rownames(res_df)
 res_df$Symbol <- id2sym[res_df$GeneID]
 cat("Genes with a symbol:", sum(!is.na(res_df$Symbol)), "/", nrow(res_df), "\n")
+
+# v5: apeglm shrinkage. DEG calls still use the Wald test on unshrunk
+# LFCs; shrunken LFCs remove the low-count noise that dominated the
+# v4 genome-wide cross-cohort correlation (Step 16).
+res_shr <- lfcShrink(dds, coef = "condition_FXS_vs_Control", type = "apeglm",
+                     quiet = TRUE)
+res_df$log2FC_shrunk <- res_shr[res_df$GeneID, "log2FoldChange"]
+rm(res_shr)
 write.csv(res_df, file.path(RESULTS_DE, "DESeq2_FXS_vs_Control_all.csv"))
 
 sig_degs <- res_df %>%
@@ -285,29 +268,68 @@ cat("\nStep 4 done — proceed only if FMR1 passed.\n")
 
 # ---- 5A: DIFFERENTIAL METHYLATION ----
 
-meth_matrix <- read.csv(file.path(DATA_DIR, "GSE41273_methylation_matrix.csv"), row.names = 1)
+meth_rds <- file.path(DATA_DIR, "GSE41273_methylation_matrix.rds")
+meth_matrix <- if (file.exists(meth_rds)) readRDS(meth_rds) else
+  as.matrix(read.csv(file.path(DATA_DIR, "GSE41273_methylation_matrix.csv"), row.names = 1))
 meta_meth   <- read.csv(file.path(DATA_DIR, "GSE41273_metadata.csv"), row.names = 1)
+meta_meth   <- meta_meth[colnames(meth_matrix), , drop = FALSE]
+stopifnot(identical(rownames(meta_meth), colnames(meth_matrix)))
 cat("\nMethylation matrix dimensions:", dim(meth_matrix), "\n")
 
 meth_condition <- factor(ifelse(
-  meta_meth$characteristics_ch1.2 == "phenotype: Case", "FXS", "Control"))
+  meta_meth$characteristics_ch1.2 == "phenotype: Case", "FXS", "Control"),
+  levels = c("Control", "FXS"))
 
 cat("FXS:", sum(meth_condition == "FXS"),
     "| Control:", sum(meth_condition == "Control"), "\n")
+cat("Sex:", paste(names(table(meta_meth$characteristics_ch1)),
+                  table(meta_meth$characteristics_ch1), collapse = "; "),
+    "— all-male cohort, so X-inactivation cannot confound FMR1\n")
 cat("Beta value range:", range(meth_matrix, na.rm = TRUE), "\n")
 
 meth_clean <- meth_matrix[complete.cases(meth_matrix), ]
 cat("Probes after NA removal:", nrow(meth_clean), "\n")
 
-design_meth <- model.matrix(~ meth_condition)
-fit <- eBayes(lmFit(meth_clean, design_meth))
+# ---- v5: blood cell-composition adjustment ----
+# Whole-blood methylation is dominated by leukocyte proportions; an
+# unadjusted case/control model can call composition shifts as DMPs.
+# EpiDISH (RPC, 7-type blood reference) estimates proportions from the
+# betas themselves. Neutrophils are dropped from the design because
+# the proportions sum to 1.
+data("centDHSbloodDMC.m", package = "EpiDISH", envir = environment())
+cell_props <- EpiDISH::epidish(beta.m = meth_clean,
+                               ref.m  = centDHSbloodDMC.m,
+                               method = "RPC")$estF
+write.csv(data.frame(Sample = rownames(cell_props), Condition = meth_condition,
+                     cell_props),
+          file.path(RESULTS_METH, "EpiDISH_cell_proportions.csv"), row.names = FALSE)
 
-dmp_results <- topTable(fit, coef = 2, number = Inf, adjust.method = "BH")
+cell_diff <- sapply(colnames(cell_props), function(ct)
+  wilcox.test(cell_props[, ct] ~ meth_condition, exact = FALSE)$p.value)
+cat("\nCell-proportion differences FXS vs Control (Wilcoxon p):\n")
+print(signif(cell_diff, 3))
+
+design_unadj <- model.matrix(~ meth_condition)
+fit_unadj    <- eBayes(lmFit(meth_clean, design_unadj))
+dmp_unadj    <- topTable(fit_unadj, coef = "meth_conditionFXS", number = Inf,
+                         adjust.method = "BH")
+
+cov_cols    <- setdiff(colnames(cell_props), "Neutro")
+design_adj  <- model.matrix(~ meth_condition + cell_props[, cov_cols])
+fit_adj     <- eBayes(lmFit(meth_clean, design_adj))
+dmp_adj     <- topTable(fit_adj, coef = "meth_conditionFXS", number = Inf,
+                        adjust.method = "BH")
+
+dmp_results <- if (METH_ADJUST_CELLTYPE) dmp_adj else dmp_unadj
 dmp_results <- dmp_results[order(dmp_results$adj.P.Val), ]
+cat("\nPrimary DMP model:", if (METH_ADJUST_CELLTYPE)
+  "~ condition + cell proportions" else "~ condition (v4)", "\n")
+cat("DMPs at FDR < 0.05 — adjusted:", sum(dmp_adj$adj.P.Val < 0.05),
+    "| unadjusted:", sum(dmp_unadj$adj.P.Val < 0.05), "\n")
 
-cat("\nDMPs at FDR < 0.05:",
-    sum(dmp_results$adj.P.Val < 0.05, na.rm = TRUE), "\n")
 write.csv(dmp_results, file.path(RESULTS_METH, "DMP_FXS_vs_Control_all.csv"))
+write.csv(dmp_unadj,   file.path(RESULTS_METH, "DMP_FXS_vs_Control_all_unadjusted.csv"))
+rm(fit_unadj, fit_adj); gc(verbose = FALSE)
 
 sig_dmps <- dmp_results %>%
   filter(adj.P.Val < 0.05, abs(logFC) > 0.1) %>%
@@ -362,6 +384,29 @@ if (nrow(fmr1_meth) > 0) {
   cat("FXS methylation is focal — the majority of significant DMPs are\n")
   cat("FMR1/ASFMR1 probes. This is the expected single-locus pattern.\n")
 }
+
+# v5 sensitivity: FMR1/ASFMR1 probes under both models
+fmr1_probes <- rownames(anno_450k)[grepl("(^|;)(FMR1|ASFMR1|FMR1-AS1)(;|$)",
+                                         anno_450k$UCSC_RefGene_Name)]
+meth_sens <- data.frame(
+  Probe         = fmr1_probes,
+  dBeta_unadj   = dmp_unadj[fmr1_probes, "logFC"],
+  FDR_unadj     = dmp_unadj[fmr1_probes, "adj.P.Val"],
+  dBeta_celladj = dmp_adj[fmr1_probes, "logFC"],
+  FDR_celladj   = dmp_adj[fmr1_probes, "adj.P.Val"])
+meth_sens <- meth_sens[!is.na(meth_sens$dBeta_unadj), ]
+write.csv(meth_sens, file.path(RESULTS_METH, "FMR1_probes_celltype_sensitivity.csv"),
+          row.names = FALSE)
+cat("\nFMR1/ASFMR1 probes — mean dBeta unadjusted:",
+    round(mean(meth_sens$dBeta_unadj), 3),
+    "| cell-adjusted:", round(mean(meth_sens$dBeta_celladj), 3), "\n")
+sig_unadj_n <- sum(dmp_unadj$adj.P.Val < 0.05 & abs(dmp_unadj$logFC) > 0.1)
+sig_adj_n   <- sum(dmp_adj$adj.P.Val   < 0.05 & abs(dmp_adj$logFC)   > 0.1)
+write.csv(data.frame(Model = c("Unadjusted (v4)", "Cell-composition adjusted (v5)"),
+                     Sig_DMPs = c(sig_unadj_n, sig_adj_n),
+                     Mean_dBeta_FMR1_probes = c(mean(meth_sens$dBeta_unadj),
+                                                mean(meth_sens$dBeta_celladj))),
+          file.path(RESULTS_METH, "DMP_model_comparison.csv"), row.names = FALSE)
 
 ggplot(gene_meth_status,
        aes(x = reorder(Gene, mean_logFC), y = mean_logFC, fill = meth_status)) +
@@ -435,7 +480,25 @@ tf_list <- readLines(file.path(DATA_DIR, "tf_list.txt"))
 tf_list <- unique(trimws(tf_list[tf_list != ""]))
 cat("\nTF list size:", length(tf_list), "\n")
 
-expr_normalized_sym <- expr_normalized
+# ---- v5: remove developmental timepoint before network inference ----
+# PC1 in GSE146339 is D28 vs D105. Left in, it drives most co-expression
+# that GENIE3/PANDA/LIONESS read as regulation, and LIONESS has no
+# covariate mechanism. removeBatchEffect regresses timepoint out while
+# protecting the condition effect (design = ~ condition). DE (Step 4)
+# still models timepoint inside DESeq2 and is unaffected.
+expr_network <- expr_normalized
+if (ADJUST_TIMEPOINT_FOR_NETWORKS) {
+  expr_network <- limma::removeBatchEffect(
+    expr_normalized, batch = timepoint,
+    design = model.matrix(~ condition))
+  pc_adj <- prcomp(t(expr_network))
+  cat("Timepoint removed for networks. PC1 vs timepoint |r| before:",
+      round(abs(cor(pca_data$x[, 1], as.numeric(timepoint))), 2),
+      "| after:", round(abs(cor(pc_adj$x[, 1], as.numeric(timepoint))), 2), "\n")
+  rm(pc_adj)
+}
+
+expr_normalized_sym <- expr_network
 sym_rows <- id2sym[rownames(expr_normalized_sym)]
 rownames(expr_normalized_sym) <- ifelse(is.na(sym_rows) | sym_rows == "",
                                         rownames(expr_normalized_sym), sym_rows)
@@ -477,23 +540,49 @@ cat("\nStarting GENIE3 inference...\n")
 expr_matrix <- as.matrix(expr_normalized_sym)
 
 deg_symbols <- sig_degs$Symbol[!is.na(sig_degs$Symbol)]
-top_genes   <- unique(c(head(deg_symbols, 500), tf_in_data))
-top_genes   <- intersect(top_genes, rownames(expr_matrix))
 
-cat("Genes for GENIE3:", length(top_genes), "\n")
-cat("TFs for GENIE3:", length(tf_in_data), "\n")
-cat("NOTE: if TFs make up most of this set, GENIE3 is inferring a\n")
-cat("largely TF-TF network — describe it as such in Methods.\n")
+# ---- v5: label-independent target universe ----
+# v4 used TFs + DEGs only (1,330 of 1,340 genes were TFs), so GENIE3 was
+# a TF-TF map and ~0.3% of each TF's regulon was eligible. v5 adds the
+# top-variance non-TF genes (variance on the timepoint-adjusted matrix,
+# no FXS/Control labels used), which is the standard GENIE3 setup.
+non_tf_genes <- setdiff(rownames(expr_matrix), tf_in_data)
+non_tf_genes <- non_tf_genes[!grepl("^LOC\\d+$|^\\d+$", non_tf_genes)]  # unannotated IDs
+nt_var       <- apply(expr_matrix[non_tf_genes, , drop = FALSE], 1, var)
+hv_targets   <- names(sort(nt_var, decreasing = TRUE))[seq_len(min(N_GENIE3_TARGETS,
+                                                                    length(nt_var)))]
+if (TARGET_SELECTION == "pvalue") hv_targets <- character(0)   # reproduce v4
+top_genes <- unique(c(deg_symbols, hv_targets, tf_in_data))
+top_genes <- intersect(top_genes, rownames(expr_matrix))
+
+cat("Genes for GENIE3:", length(top_genes),
+    "| TFs:", length(tf_in_data),
+    "| non-TF targets:", length(setdiff(top_genes, tf_in_data)), "\n")
 
 expr_subset <- expr_matrix[top_genes, ]
 
 genie3_weights <- GENIE3(expr_subset, regulators = tf_in_data,
-                         nTrees = 1000, nCores = N_CORES)
+                         nTrees = N_TREES_OBS, nCores = N_CORES)
 cat("GENIE3 complete\n")
 
-edge_list_genie3 <- reshape2::melt(genie3_weights)
-colnames(edge_list_genie3) <- c("Target", "TF", "Weight")
-edge_list_genie3 <- edge_list_genie3[edge_list_genie3$Weight > 0, ]
+# ---- v5 FIX: orientation ----
+# GENIE3 returns weightMatrix[regulator, target] (rows = regulators).
+# v4 named melt()'s Var1 "Target" and Var2 "TF", so every downstream
+# GENIE3 "TF" was actually a target and vice versa (visible in v4 output
+# as non-TF genes such as FMR1/TSHR/RERG having out-degree ~80-100, and
+# Sum_Weight = 1 per "TF" — GENIE3 normalises per TARGET).
+stopifnot(all(rownames(genie3_weights) %in% tf_in_data),
+          ncol(genie3_weights) == length(top_genes))
+edge_list_genie3 <- reshape2::melt(genie3_weights, varnames = c("TF", "Target"),
+                                   value.name = "Weight")
+edge_list_genie3$TF     <- as.character(edge_list_genie3$TF)
+edge_list_genie3$Target <- as.character(edge_list_genie3$Target)
+edge_list_genie3 <- edge_list_genie3[edge_list_genie3$Weight > 0 &
+                                       edge_list_genie3$TF != edge_list_genie3$Target, ]
+stopifnot(all(edge_list_genie3$TF %in% tf_in_data))
+chk <- tapply(edge_list_genie3$Weight, edge_list_genie3$Target, sum)
+cat("Per-target weight sums (should be ~1):", round(range(chk), 3), "\n")
+rm(chk)
 edge_list_genie3 <- edge_list_genie3[order(edge_list_genie3$Weight,
                                            decreasing = TRUE), ]
 
@@ -512,8 +601,11 @@ cat("\nStep 7 done\n")
 # ---- 8A: STRING PPI ----
 
 cat("\nLoading STRING PPI...\n")
-ppi_raw <- read.table(file.path(DATA_DIR, "9606.protein.links.v12.0.txt"), header = TRUE, sep = " ")
-ppi_filtered <- ppi_raw[ppi_raw$combined_score >= 700, ]
+string_gz  <- file.path(DATA_DIR, "9606.protein.links.v12.0.txt.gz")
+string_txt <- file.path(DATA_DIR, "9606.protein.links.v12.0.txt")
+ppi_raw <- data.table::fread(if (file.exists(string_gz)) string_gz else string_txt,
+                             sep = " ", header = TRUE, showProgress = FALSE)
+ppi_filtered <- as.data.frame(ppi_raw[combined_score >= 700])
 cat("High confidence PPI edges:", nrow(ppi_filtered), "\n")
 
 ppi_filtered$protein1 <- gsub("9606\\.", "", ppi_filtered$protein1)
@@ -549,14 +641,21 @@ rm(ppi_raw); gc(verbose = FALSE)   # a few million rows, not needed again
 
 cat("\nBuilding motif prior from JASPAR...\n")
 
-top_ranked <- res_df %>%
-  filter(!is.na(pvalue), !is.na(Symbol), Symbol != "") %>%
-  arrange(pvalue) %>%
-  head(N_TARGET_POOL)
+if (TARGET_SELECTION == "pvalue") {
+  # v4 behaviour: top genes by DE p-value (selection on the FXS contrast)
+  top_ranked <- res_df %>%
+    filter(!is.na(pvalue), !is.na(Symbol), Symbol != "") %>%
+    arrange(pvalue) %>%
+    head(N_TARGET_POOL)
+  target_genes <- unique(top_ranked$Symbol[!top_ranked$Symbol %in% tf_in_data])
+} else {
+  # v5: label-independent — DEGs plus the most variable non-TF genes
+  # from the same universe GENIE3 used, so both networks share targets
+  top_ranked   <- data.frame(Symbol = unique(c(deg_symbols, hv_targets)))
+  target_genes <- head(setdiff(top_ranked$Symbol, tf_in_data), N_TARGET_POOL)
+}
 
-target_genes <- unique(top_ranked$Symbol[!top_ranked$Symbol %in% tf_in_data])
-
-cat("Ranked genes drawn:", nrow(top_ranked), "\n")
+cat("Target selection:", TARGET_SELECTION, "| ranked genes drawn:", nrow(top_ranked), "\n")
 cat("Non-TF target genes:", length(target_genes), "\n")
 cat("TFs in data:", length(tf_in_data), "\n")
 cat("Target/TF ratio:", round(length(target_genes) / length(tf_in_data), 2), "\n")
@@ -804,7 +903,8 @@ cat("\nStep 8 done\n")
 
 rm(counts_raw, count_matrix, count_matrix_filtered, ppi_filtered,
    panda_result, reg_net_matrix, expr_panda_clean, probe2gene_all,
-   anno_450k, meth_matrix, dmp_results, res_plot)
+   anno_450k, meth_matrix, dmp_results, res_plot,
+   meth_clean, dmp_unadj, dmp_adj)
 gc(verbose = FALSE)
 
 save.image(file.path(CHECKPOINTS_DIR, "checkpoint_step8.RData"))
