@@ -623,8 +623,25 @@ ppi_filtered$protein1 <- gsub("9606\\.", "", ppi_filtered$protein1)
 ppi_filtered$protein2 <- gsub("9606\\.", "", ppi_filtered$protein2)
 ensp_ids <- unique(c(ppi_filtered$protein1, ppi_filtered$protein2))
 
-ensp_to_symbol <- mapIds(org.Hs.eg.db, keys = ensp_ids, column = "SYMBOL",
-                         keytype = "ENSEMBLPROT", multiVals = "first")
+# v5: STRING's own protein.info table (preferred_name) maps essentially
+# every STRING protein. v4 used org.Hs.eg.db ENSEMBLPROT, which mapped only
+# ~5% of high-confidence edges, leaving most TFs without PPI support.
+info_f <- file.path(DATA_DIR, "9606.protein.info.v12.0.txt.gz")
+ensp_to_symbol <- setNames(rep(NA_character_, length(ensp_ids)), ensp_ids)
+if (file.exists(info_f)) {
+  pinfo <- data.table::fread(info_f, sep = "\t", header = TRUE, quote = "",
+                             select = 1:2, showProgress = FALSE)
+  setnames(pinfo, c("protein", "preferred_name"))
+  pinfo[, protein := sub("^9606\\.", "", protein)]
+  ensp_to_symbol[] <- pinfo$preferred_name[match(ensp_ids, pinfo$protein)]
+  rm(pinfo)
+}
+miss <- is.na(ensp_to_symbol)
+if (any(miss))
+  ensp_to_symbol[miss] <- mapIds(org.Hs.eg.db, keys = ensp_ids[miss], column = "SYMBOL",
+                                 keytype = "ENSEMBLPROT", multiVals = "first")
+cat("STRING proteins mapped to symbols:", sum(!is.na(ensp_to_symbol)), "/",
+    length(ensp_ids), "\n")
 ppi_filtered$gene1 <- ensp_to_symbol[ppi_filtered$protein1]
 ppi_filtered$gene2 <- ensp_to_symbol[ppi_filtered$protein2]
 ppi_filtered <- ppi_filtered[!is.na(ppi_filtered$gene1) &

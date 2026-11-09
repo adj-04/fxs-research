@@ -132,6 +132,11 @@ cat("\n=== STRING v12.0 human PPI ===\n")
 fetch("https://stringdb-downloads.org/download/protein.links.v12.0/9606.protein.links.v12.0.txt.gz",
       file.path(DATA_DIR, "9606.protein.links.v12.0.txt.gz"), min_bytes = 1e7)
 
+# STRING's own protein ID -> gene name table (maps ~all STRING proteins;
+# org.Hs.eg.db ENSEMBLPROT maps only a small fraction)
+fetch("https://stringdb-downloads.org/download/protein.info.v12.0/9606.protein.info.v12.0.txt.gz",
+      file.path(DATA_DIR, "9606.protein.info.v12.0.txt.gz"), min_bytes = 1e5)
+
 cat("\n=== TRRUST v2 human ===\n")
 fetch("https://www.grnpedia.org/trrust/data/trrust_rawdata.human.tsv",
       file.path(DATA_DIR, "trrust_rawdata.human.tsv"))
