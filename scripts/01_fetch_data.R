@@ -40,8 +40,32 @@ fetch(geo_counts_url("GSE146339", "GSE146339_raw_counts_GRCh38.p13_NCBI.tsv.gz")
       file.path(DATA_DIR, "GSE146339_raw_counts_GRCh38.p13_NCBI.tsv.gz"))
 fetch(geo_counts_url("GSE218676", "GSE218676_raw_counts_GRCh38.p13_NCBI.tsv.gz"),
       file.path(DATA_DIR, "GSE218676_raw_counts_GRCh38.p13_NCBI.tsv.gz"))
-fetch(geo_counts_url("GSE146339", "Human.GRCh38.p13.annot.tsv.gz"),
-      file.path(DATA_DIR, "Human.GRCh38.p13.annot.tsv.gz"))
+# The annotation table is shared across all GEO series: its URL must NOT
+# carry acc=, or NCBI redirects to a per-series folder and returns 404.
+annot_path <- file.path(DATA_DIR, "Human.GRCh38.p13.annot.tsv.gz")
+annot_ok <- tryCatch({
+  fetch(paste0("https://www.ncbi.nlm.nih.gov/geo/download/?format=file",
+               "&type=rnaseq_counts&file=Human.GRCh38.p13.annot.tsv.gz"),
+        annot_path); TRUE
+}, error = function(e) FALSE)
+if (!annot_ok) {
+  # Fallback: the pipeline only uses GeneID -> Symbol from this file
+  cat("  NCBI annotation unavailable — building GeneID/Symbol from org.Hs.eg.db\n")
+  suppressPackageStartupMessages(library(org.Hs.eg.db))
+  ids <- unique(c(
+    read.delim(gzfile(file.path(DATA_DIR, "GSE146339_raw_counts_GRCh38.p13_NCBI.tsv.gz")))$GeneID,
+    read.delim(gzfile(file.path(DATA_DIR, "GSE218676_raw_counts_GRCh38.p13_NCBI.tsv.gz")))$GeneID))
+  sym <- AnnotationDbi::mapIds(org.Hs.eg.db, keys = as.character(ids), column = "SYMBOL",
+                               keytype = "ENTREZID", multiVals = "first")
+  annot_fb <- data.frame(GeneID = ids, Symbol = unname(sym))
+  annot_fb$Symbol[is.na(annot_fb$Symbol)] <- ""
+  gz <- gzfile(annot_path, "w")
+  write.table(annot_fb, gz, sep = "\t", quote = FALSE, row.names = FALSE)
+  close(gz)
+  writeLines(paste("Built from org.Hs.eg.db", as.character(packageVersion("org.Hs.eg.db")),
+                   "on", Sys.Date(), "(NCBI annotation download failed)"),
+             file.path(DATA_DIR, "ANNOTATION_SOURCE.txt"))
+}
 
 cat("\n=== Sample metadata (shipped in repo, GEO fallback) ===\n")
 for (f in c("GSE218676_metadata.csv", "GSE41273_metadata.csv", "tf_list.txt")) {
