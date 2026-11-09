@@ -126,10 +126,13 @@ genie3_centrality <- data.frame(
   InDegree    = degree(g_genie3, mode = "in"),
   OutDegree   = degree(g_genie3, mode = "out"),
   Betweenness = betweenness(g_genie3, directed = TRUE, normalized = TRUE),
-  PageRank    = page_rank(g_genie3)$vector)
-genie3_centrality <- genie3_centrality[order(genie3_centrality$PageRank,
+  PageRank    = page_rank(g_genie3)$vector,
+  OutStrength = strength(g_genie3, mode = "out", weights = E(g_genie3)$weight))
+# v5: hubs = TFs ranked by weighted out-degree (as in the paper, Fig. 7).
+# PageRank on a directed TF->target graph ranks receivers, not regulators.
+genie3_centrality <- genie3_centrality[order(genie3_centrality$OutStrength,
                                              decreasing = TRUE), ]
-cat("\nTop 20 hub genes — GENIE3 (by PageRank):\n")
+cat("\nTop 20 hub TFs — GENIE3 (by weighted out-degree):\n")
 print(head(genie3_centrality, 20))
 write.csv(genie3_centrality, file.path(RESULTS_GENIE3, "GENIE3_centrality.csv"), row.names = FALSE)
 
@@ -153,12 +156,12 @@ print(intersect(known_tf, head(panda_centrality$Gene, 50)))
 
 top20_genie3 <- head(genie3_centrality, 20)
 top20_genie3$Gene <- factor(top20_genie3$Gene,
-                            levels = top20_genie3$Gene[order(top20_genie3$PageRank)])
-ggplot(top20_genie3, aes(x = Gene, y = PageRank, fill = Type)) +
+                            levels = top20_genie3$Gene[order(top20_genie3$OutStrength)])
+ggplot(top20_genie3, aes(x = Gene, y = OutStrength, fill = Type)) +
   geom_bar(stat = "identity") + coord_flip() +
   scale_fill_manual(values = c("TF" = "#E74C3C", "Target" = "#3498DB")) +
-  labs(title = "Top 20 Hub Genes — GENIE3 Network",
-       x = "Gene", y = "PageRank Score") + theme_bw()
+  labs(title = "Top 20 Hub TFs - GENIE3 Network (weighted out-degree)",
+       x = "TF", y = "Weighted out-degree") + theme_bw()
 ggsave(file.path(FIG_GENIE3, "GENIE3_hub_genes.png"), width = 8, height = 6, dpi = 300)
 
 top20_panda <- head(panda_centrality, 20)

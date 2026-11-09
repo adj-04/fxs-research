@@ -548,6 +548,17 @@ deg_symbols <- sig_degs$Symbol[!is.na(sig_degs$Symbol)]
 # no FXS/Control labels used), which is the standard GENIE3 setup.
 non_tf_genes <- setdiff(rownames(expr_matrix), tf_in_data)
 non_tf_genes <- non_tf_genes[!grepl("^LOC\\d+$|^\\d+$", non_tf_genes)]  # unannotated IDs
+# Expression floor before ranking by variance: >= 10 normalised counts in
+# >= 3 samples (the smallest timepoint x condition group). Without it,
+# near-silent genes (olfactory receptors, keratins, testis genes in a brain
+# organoid) top the variance list through VST noise and become fake hubs.
+norm_ct  <- counts(dds, normalized = TRUE)
+expr_ok  <- rownames(norm_ct)[rowSums(norm_ct >= 10) >= 3]
+expr_ok_sym <- unique(na.omit(id2sym[expr_ok]))
+cat("Non-TF genes before / after expression floor:", length(non_tf_genes), "/",
+    sum(non_tf_genes %in% expr_ok_sym), "\n")
+non_tf_genes <- intersect(non_tf_genes, expr_ok_sym)
+rm(norm_ct)
 nt_var       <- apply(expr_matrix[non_tf_genes, , drop = FALSE], 1, var)
 hv_targets   <- names(sort(nt_var, decreasing = TRUE))[seq_len(min(N_GENIE3_TARGETS,
                                                                     length(nt_var)))]
