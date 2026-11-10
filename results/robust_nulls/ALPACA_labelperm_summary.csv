@@ -1,8 +1,8 @@
 "Metric","Value"
-"ALPACA relabelings (of 399)",100
+"ALPACA relabelings (of 399)",399
 "Observed modules",26
 "Observed modules with >=5 nodes",17
-"Global differential modularity p",0.812
-"Best module family-wise p (Q)",0.376
+"Global differential modularity p",0.832
+"Best module family-wise p (Q)",0.368
 "Modules family-wise p<0.05 (Q)",0
-"Best module family-wise p (density, >=5 nodes)",0.396
+"Best module family-wise p (density, >=5 nodes)",0.345

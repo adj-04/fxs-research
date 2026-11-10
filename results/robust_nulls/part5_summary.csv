@@ -27,10 +27,10 @@
 "PANDA","Edges moved by real expression, FDR<0.05",2404630
 "PANDA","  of which higher with real expression",1305226
 "PANDA","Edges moved by real expression, FDR<0.10",2507666
-"ALPACA","ALPACA relabelings (of 399)",100
+"ALPACA","ALPACA relabelings (of 399)",399
 "ALPACA","Observed modules",26
 "ALPACA","Observed modules with >=5 nodes",17
-"ALPACA","Global differential modularity p",0.812
-"ALPACA","Best module family-wise p (Q)",0.376
+"ALPACA","Global differential modularity p",0.832
+"ALPACA","Best module family-wise p (Q)",0.368
 "ALPACA","Modules family-wise p<0.05 (Q)",0
-"ALPACA","Best module family-wise p (density, >=5 nodes)",0.396
+"ALPACA","Best module family-wise p (density, >=5 nodes)",0.345

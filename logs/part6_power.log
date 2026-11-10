@@ -1,0 +1,109 @@
+nohup: ignoring input
+FXS_ROOT: /home/jha/fxs-research 
+FXS_REPO: /home/jha/fxs-research 
+Config loaded | cores: 8 | target selection: variance | GENIE3 targets: 5000 | timepoint-adjusted networks: TRUE | cell-type-adjusted methylation: TRUE 
+
+FXS_ROOT: /home/jha/fxs-research 
+FXS_REPO: /home/jha/fxs-research 
+Config loaded | cores: 8 | target selection: variance | GENIE3 targets: 5000 | timepoint-adjusted networks: TRUE | cell-type-adjusted methylation: TRUE 
+Checkpoint loaded.
+Stages: alpaca_power, summary | workers: 1 
+Freeing before fork: control_mean, control_net, ctrl_beta, dds, diff_df, edge_list_genie3, edge_list_panda, fxs_mean, fxs_net, genes, genie3_weights, tfs 
+Remaining R objects: 0.8 GB
+
+=== ALPACA spike-in power ===
+Block: 15 TFs x 60 genes | delta in units of control edge-score SD = 1.55 | relabelings per scenario: 20 
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+ delta rep block_edges   Q_total     Q_max  p_global    p_maxQ
+     1   1         900 0.1695012 0.1161681 0.8571429 0.4761905
+ block_in_best_module n_null
+            0.1466667     20
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+ delta rep block_edges   Q_total     Q_max  p_global    p_maxQ
+     2   1         900 0.1693111 0.1162592 0.8571429 0.4761905
+ block_in_best_module n_null
+                  0.2     20
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+ delta rep block_edges   Q_total     Q_max  p_global    p_maxQ
+     4   1         900 0.1692816 0.1161988 0.8571429 0.4761905
+ block_in_best_module n_null
+            0.2266667     20
+ delta reps detected_maxQ detected_global median_block_recovery
+  0.25    3             0               0             0.2400000
+  1.00    1             0               0             0.1466667
+  2.00    1             0               0             0.2000000
+  4.00    1             0               0             0.2266667
+
+=== PART 6 OUTPUTS ===
+  results/review_checks/ALPACA_spikein_power.csv 
+  results/review_checks/ALPACA_spikein_runs.csv 
+  results/review_checks/ChEA3_selfrecovery_negative_controls.csv 
+  results/review_checks/CollecTRI_selfrecovery_negative_controls.csv 
+  results/review_checks/GENIE3_spikein_edges.csv 
+  results/review_checks/GENIE3_spikein_power.csv 
+  results/review_checks/LIONESS_MDE_by_n.csv 
+  results/review_checks/LIONESS_MDE.csv 
+  results/review_checks/TF_activity_donorblock_summary.csv 
+  results/review_checks/TF_activity_donorblock.csv 
+
+=== PART 6 COMPLETE ===

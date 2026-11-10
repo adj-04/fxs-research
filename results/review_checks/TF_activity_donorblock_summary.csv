@@ -1,0 +1,8 @@
+"Metric","Value"
+"Donor correlation (duplicateCorrelation)","0.662"
+"TFs FDR<0.05, validation DESeq2 (Wald)","34"
+"TFs FDR<0.05, validation limma-voom (donor-blocked)","11"
+"Same-direction FDR<0.05 in both cohorts, DESeq2","CTNNB1"
+"Same-direction FDR<0.05 in both cohorts, donor-blocked",""
+"Spearman organoid vs validation, DESeq2","-0.0192"
+"Spearman organoid vs validation, donor-blocked","0.0275"

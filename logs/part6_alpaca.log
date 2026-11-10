@@ -1,0 +1,524 @@
+nohup: ignoring input
+FXS_ROOT: /home/jha/fxs-research 
+FXS_REPO: /home/jha/fxs-research 
+Config loaded | cores: 8 | target selection: variance | GENIE3 targets: 5000 | timepoint-adjusted networks: TRUE | cell-type-adjusted methylation: TRUE 
+
+FXS_ROOT: /home/jha/fxs-research 
+FXS_REPO: /home/jha/fxs-research 
+Config loaded | cores: 8 | target selection: variance | GENIE3 targets: 5000 | timepoint-adjusted networks: TRUE | cell-type-adjusted methylation: TRUE 
+Checkpoint loaded.
+Stages: alpaca399, alpaca_power, summary | workers: 3 
+Freeing before fork: control_mean, control_net, ctrl_beta, dds, diff_df, edge_list_genie3, edge_list_panda, fxs_mean, fxs_net, genes, genie3_weights, tfs 
+Remaining R objects: 0.8 GB
+
+=== ALPACA: completing all 399 relabelings ===
+Part 5 state: relabelings done = 100 
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+[17:19:40] relabeling 109/399 | 1.5 min | ETA 48 min
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+[17:21:24] relabeling 118/399 | 3.2 min | ETA 50 min
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+[17:23:02] relabeling 127/399 | 4.9 min | ETA 49 min
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+[17:24:45] relabeling 136/399 | 6.6 min | ETA 48 min
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+[17:26:31] relabeling 145/399 | 8.3 min | ETA 47 min
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+[17:28:05] relabeling 154/399 | 9.9 min | ETA 45 min
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+[17:29:41] relabeling 163/399 | 11.5 min | ETA 43 min
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+[17:31:20] relabeling 172/399 | 13.2 min | ETA 42 min
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+[17:33:02] relabeling 181/399 | 14.9 min | ETA 40 min
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+[17:34:50] relabeling 190/399 | 16.7 min | ETA 39 min
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+[17:36:30] relabeling 199/399 | 18.3 min | ETA 37 min
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+[17:38:19] relabeling 208/399 | 20.1 min | ETA 36 min
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+[17:40:05] relabeling 217/399 | 21.9 min | ETA 34 min
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+[17:41:47] relabeling 226/399 | 23.6 min | ETA 32 min
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+[17:43:19] relabeling 235/399 | 25.1 min | ETA 31 min
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+[17:45:08] relabeling 244/399 | 27.0 min | ETA 29 min
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+[17:46:47] relabeling 253/399 | 28.6 min | ETA 27 min
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+[17:48:26] relabeling 262/399 | 30.3 min | ETA 26 min
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+[17:49:55] relabeling 271/399 | 31.8 min | ETA 24 min
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+[17:51:32] relabeling 280/399 | 33.4 min | ETA 22 min
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+[17:53:11] relabeling 289/399 | 35.0 min | ETA 20 min
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+[17:54:51] relabeling 298/399 | 36.7 min | ETA 19 min
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+[17:56:31] relabeling 307/399 | 38.4 min | ETA 17 min
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+[17:58:07] relabeling 316/399 | 40.0 min | ETA 15 min
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+[17:59:49] relabeling 325/399 | 41.7 min | ETA 14 min
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+[18:01:19] relabeling 334/399 | 43.2 min | ETA 12 min
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+[18:02:52] relabeling 343/399 | 44.7 min | ETA 10 min
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+[18:04:41] relabeling 352/399 | 46.5 min | ETA 9 min
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+[18:06:21] relabeling 361/399 | 48.2 min | ETA 7 min
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+[18:08:15] relabeling 370/399 | 50.1 min | ETA 5 min
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+[18:09:46] relabeling 379/399 | 51.6 min | ETA 4 min
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+[18:11:24] relabeling 388/399 | 53.2 min | ETA 2 min
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+[18:13:03] relabeling 397/399 | 54.9 min | ETA 0 min
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+[18:13:33] relabeling 399/399 | 55.4 min | ETA 0 min
+Done. Now rerun Part 5 with FXS_PART5_STAGES=alpaca,summary FXS_P5_ALPACA_PERM=399
+
+=== ALPACA spike-in power ===
+Block: 15 TFs x 60 genes | delta in units of control edge-score SD = 1.55 | relabelings per scenario: 40 
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+ delta rep block_edges   Q_total     Q_max  p_global    p_maxQ
+  0.25   1         900 0.1696329 0.1161728 0.7837838 0.4054054
+ block_in_best_module n_null
+            0.1733333     36
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+ delta rep block_edges   Q_total     Q_max  p_global    p_maxQ
+  0.25   2         900 0.1695704 0.1161894 0.8518519 0.4074074
+ block_in_best_module n_null
+                 0.24     26
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+ delta rep block_edges   Q_total    Q_max  p_global    p_maxQ
+  0.25   3         900 0.1695086 0.116207 0.7619048 0.4761905
+ block_in_best_module n_null
+            0.2666667     20
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Weights detected. Building condor object with weighted edges.
+Error in sendMaster(try(eval(expr, env), silent = TRUE), FALSE) : 
+  ignoring SIGPIPE signal
+Calls: run_relabelings -> mclapply -> mcparallel -> sendMaster
+In addition: Warning messages:
+1: In mclapply(js, function(j) { :
+  4 parallel function calls did not deliver results
+2: In mclapply(js, function(j) { :
+  14 parallel function calls did not deliver results
+3: In mclapply(js, function(j) { :
+  20 parallel function calls did not deliver results
+Error in sendMaster(try(eval(expr, env), silent = TRUE), FALSE) : 
+  ignoring SIGPIPE signal
+Calls: run_relabelings -> mclapply -> mcparallel -> sendMaster
+In addition: Warning messages:
+1: In mclapply(js, function(j) { :
+  4 parallel function calls did not deliver results
+2: In mclapply(js, function(j) { :
+  14 parallel function calls did not deliver results
+3: In mclapply(js, function(j) { :
+  20 parallel function calls did not deliver results
+Error in sendMaster(try(eval(expr, env), silent = TRUE), FALSE) : 
+  ignoring SIGPIPE signal
+Calls: run_relabelings -> mclapply -> mcparallel -> sendMaster
+In addition: Warning messages:
+1: In mclapply(js, function(j) { :
+  4 parallel function calls did not deliver results
+2: In mclapply(js, function(j) { :
+  14 parallel function calls did not deliver results
+3: In mclapply(js, function(j) { :
+  20 parallel function calls did not deliver results

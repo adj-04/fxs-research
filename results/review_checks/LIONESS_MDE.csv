@@ -1,0 +1,4 @@
+"True_edges_k","p_threshold","Median_MDE","Median_MDE_in_edge_SDs","Frac_edges_whose_obs_diff_exceeds_MDE"
+1,1.72e-08,5.828,8.74,0
+100,1.72e-06,3.797,5.69,0
+10000,0.000172,2.407,3.61,0
