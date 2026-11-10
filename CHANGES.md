@@ -19,7 +19,11 @@ Second review round. New script `scripts/part6_review_checks.R` (outputs in
   enrichments are matched by the motif prior alone (circular). REST's GENIE3
   CollecTRI enrichment survives: absent from shuffled-data GENIE3 networks.
 - **ALPACA exact test:** all 399 relabelings (global p = 0.83; best module 0.37).
-- Paper: abstract shortened; power section and table; CTNNB1 described as Wnt
+- Paper: expected chance overlap reported for cross-cohort TF activity (CTNNB1
+  exploratory); null-floor resolution stated for GENIE3 and ALPACA spike-ins (no
+  spiked GENIE3 edge came near the floor); LIONESS MDE qualified as applying to
+  the conservative limma edge test; Fig. 1 shows power and negative controls;
+  abstract shortened; power section and table; CTNNB1 described as Wnt
   effector without the Hedgehog link; SP1 wording corrected.
 
 ## v5.1 (November 2026)

@@ -35,8 +35,8 @@ independent windows onto the same lesion.
 |---|---|
 | **FMR1 silencing** | Replicates in all three datasets: log2FC −10.47 (organoids), −8.91 (validation lines), Δβ = 0.58 across 15 promoter probes (blood, cell-adjusted) |
 | **Best-validated regulator** | **REST**: GENIE3 targets enriched among curated REST targets in TRRUST (4.6×, FDR = 0.004) and CollecTRI (4.3×, FDR = 5 × 10⁻⁶); absent in GENIE3 networks built on shuffled data (best p = 0.20). Its ENCODE ChIP-seq rank 1 is matched by random gene sets, and its PANDA enrichment by the motif prior alone, so those are not counted |
-| **TF activity** | CTNNB1 and SP1 lower in FXS in both cohorts, but with the validation lines' donor structure modelled neither reaches FDR < 0.05 there (0.07, 0.12); CTNNB1 is significant in organoids (FDR = 0.004) |
-| **Power** | At 6 vs 6: a LIONESS edge needs a ~6 SD difference to be detected (~1 SD at 50 per group); GENIE3 detected 0 of 300 spiked edges up to r = 0.99; ALPACA missed a 2 SD shift across 3% of edges |
+| **TF activity** | CTNNB1 and SP1 lower in FXS in both cohorts, but with the validation lines' donor structure modelled neither reaches FDR < 0.05 there (0.07, 0.12); one TF in both (CTNNB1, unblocked) is below the 1.7 expected by chance, so these are exploratory |
+| **Power** | At 6 vs 6: a LIONESS edge needs a ~6 SD difference to be detected (~1 SD at 50 per group); GENIE3 detected 0 of 300 spiked edges up to r = 0.99 (best p 2.8 × 10⁻⁶, far above the null floor); ALPACA missed a 2 SD shift across 3% of edges |
 | **Tissue generality** | Only FMR1 and FMR1-AS1 are significant in more than one tissue context (tissue restriction and limited power cannot be told apart at these cohort sizes) |
 | **Expression shapes PANDA** | With shuffled expression PANDA returns the same network every run (r = 0.998); real expression moves it away from the priors (r = 0.894) |
 
