@@ -1,0 +1,18 @@
+"Metric","Value"
+"Prior-null runs",20
+"Observed edges (all)",2902725
+"Null q95 (all edges)",3.547
+"Observed fraction above null q95",0.0517
+"Observed fraction below null q05",0.2269
+"Max CDF difference (KS D)",0.1894
+"Observed edges pooled FDR<0.05 (upper tail)",0
+"Shuffled-expression runs",5
+"Correlation observed vs shuffled-expression network (mean)",0.894
+"Correlation between shuffled-expression networks (mean)",0.9983
+"Correlation with motif prior: observed",0.846
+"Correlation with motif prior: shuffled expression (mean)",0.9426
+"Mean |observed - shuffled mean|",0.5087
+"Calibration: held-out fraction p<0.05 (mean)",0.05
+"Edges moved by real expression, FDR<0.05",2404630
+"  of which higher with real expression",1305226
+"Edges moved by real expression, FDR<0.10",2507666

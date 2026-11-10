@@ -1,0 +1,36 @@
+"Test","Metric","Value"
+"GENIE3","Permutations",5
+"GENIE3","Trees per target (null)",1000
+"GENIE3","Trees per target (observed)",1000
+"GENIE3","Edges tested",8260380
+"GENIE3","Null values pooled",41347427
+"GENIE3","Smallest attainable p",2.42e-08
+"GENIE3","Calibration: null fraction p<0.05 (mean)",0.0497
+"GENIE3","Calibration: null fraction p<0.01 (mean)",0.01
+"GENIE3","Observed fraction p<0.05",0.0513
+"GENIE3","Observed edges FDR<0.05",0
+"GENIE3","Observed edges FDR<0.10",0
+"PANDA","Prior-null runs",20
+"PANDA","Observed edges (all)",2902725
+"PANDA","Null q95 (all edges)",3.547
+"PANDA","Observed fraction above null q95",0.0517
+"PANDA","Observed fraction below null q05",0.2269
+"PANDA","Max CDF difference (KS D)",0.1894
+"PANDA","Observed edges pooled FDR<0.05 (upper tail)",0
+"PANDA","Shuffled-expression runs",5
+"PANDA","Correlation observed vs shuffled-expression network (mean)",0.894
+"PANDA","Correlation between shuffled-expression networks (mean)",0.9983
+"PANDA","Correlation with motif prior: observed",0.846
+"PANDA","Correlation with motif prior: shuffled expression (mean)",0.9426
+"PANDA","Mean |observed - shuffled mean|",0.5087
+"PANDA","Calibration: held-out fraction p<0.05 (mean)",0.05
+"PANDA","Edges moved by real expression, FDR<0.05",2404630
+"PANDA","  of which higher with real expression",1305226
+"PANDA","Edges moved by real expression, FDR<0.10",2507666
+"ALPACA","ALPACA relabelings (of 399)",100
+"ALPACA","Observed modules",26
+"ALPACA","Observed modules with >=5 nodes",17
+"ALPACA","Global differential modularity p",0.812
+"ALPACA","Best module family-wise p (Q)",0.376
+"ALPACA","Modules family-wise p<0.05 (Q)",0
+"ALPACA","Best module family-wise p (density, >=5 nodes)",0.396

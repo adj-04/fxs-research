@@ -1,0 +1,12 @@
+"Metric","Value"
+"Permutations",5
+"Trees per target (null)",1000
+"Trees per target (observed)",1000
+"Edges tested",8260380
+"Null values pooled",41347427
+"Smallest attainable p",2.42e-08
+"Calibration: null fraction p<0.05 (mean)",0.0497
+"Calibration: null fraction p<0.01 (mean)",0.01
+"Observed fraction p<0.05",0.0513
+"Observed edges FDR<0.05",0
+"Observed edges FDR<0.10",0

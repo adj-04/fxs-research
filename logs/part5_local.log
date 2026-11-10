@@ -1,0 +1,16 @@
+nohup: ignoring input
+FXS_ROOT: /home/jha/fxs-research 
+FXS_REPO: /home/jha/fxs-research 
+Config loaded | cores: 8 | target selection: variance | GENIE3 targets: 5000 | timepoint-adjusted networks: TRUE | cell-type-adjusted methylation: TRUE 
+
+FXS_ROOT: /home/jha/fxs-research 
+FXS_REPO: /home/jha/fxs-research 
+Config loaded | cores: 8 | target selection: variance | GENIE3 targets: 5000 | timepoint-adjusted networks: TRUE | cell-type-adjusted methylation: TRUE 
+Checkpoint loaded.
+Stages: genie3, panda 
+
+=== GENIE3 null (matched trees) ===
+Permutations: 5 | trees per target: 1000 (observed network used 1000 )
+[13:00:16] GENIE3 permutation 1/5 | 0.9 min | ETA 4 min
+[13:01:12] GENIE3 permutation 2/5 | 1.9 min | ETA 3 min
+[13:02:24] GENIE3 permutation 3/5 | 3.1 min | ETA 2 min
