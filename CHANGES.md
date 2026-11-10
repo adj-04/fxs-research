@@ -1,5 +1,27 @@
 # Changelog
 
+## v5.2 (November 2026)
+
+Second review round. New script `scripts/part6_review_checks.R` (outputs in
+`results/review_checks/`).
+
+- **Power analysis.** LIONESS minimum detectable effect from per-edge moderated
+  variances (5.7 edge SDs at 6 vs 6 for 100 true edges; 1.1 SDs at 50 per
+  group). GENIE3 co-expression spike-in: 0 of 300 edges detected for r = 0.5–0.99.
+  ALPACA block spike-in: no detection from 900 edges (δ up to 4 SD) to 90,000
+  edges (3.1% of the network, δ = 2 SD).
+- **Donor-blocked TF activity** in the validation cohort (limma-voom moderated t).
+  SP1 (FDR 0.003 → 0.12) and CTNNB1 (0.013 → 0.07) are no longer significant
+  there; no TF is significant in both cohorts.
+- **Negative controls for regulon recovery.** ENCODE ChIP-seq self-recovery is
+  matched by random gene sets from the same universe (REST rank 1 → random-set
+  p = 0.29) and is no longer counted as support. PANDA's curated-target
+  enrichments are matched by the motif prior alone (circular). REST's GENIE3
+  CollecTRI enrichment survives: absent from shuffled-data GENIE3 networks.
+- **ALPACA exact test:** all 399 relabelings (global p = 0.83; best module 0.37).
+- Paper: abstract shortened; power section and table; CTNNB1 described as Wnt
+  effector without the Hedgehog link; SP1 wording corrected.
+
 ## v5.1 (November 2026)
 
 Addresses an external review of the v5 network statistics. New script

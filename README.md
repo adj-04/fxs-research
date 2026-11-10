@@ -34,8 +34,9 @@ independent windows onto the same lesion.
 | | Result |
 |---|---|
 | **FMR1 silencing** | Replicates in all three datasets: log2FC −10.47 (organoids), −8.91 (validation lines), Δβ = 0.58 across 15 promoter probes (blood, cell-adjusted) |
-| **Best-validated regulator** | **REST**: rank 1 in ChEA3's ENCODE ChIP-seq library for both GENIE3 and PANDA targets; curated-target enrichment in TRRUST (FDR = 0.004) and CollecTRI (FDR = 5 × 10⁻⁶); top-30 GENIE3 hub |
-| **TF activity** | SP1 activity lower in FXS in both cohorts (validation FDR = 0.003); CTNNB1 is the only TF significant in both |
+| **Best-validated regulator** | **REST**: GENIE3 targets enriched among curated REST targets in TRRUST (4.6×, FDR = 0.004) and CollecTRI (4.3×, FDR = 5 × 10⁻⁶); absent in GENIE3 networks built on shuffled data (best p = 0.20). Its ENCODE ChIP-seq rank 1 is matched by random gene sets, and its PANDA enrichment by the motif prior alone, so those are not counted |
+| **TF activity** | CTNNB1 and SP1 lower in FXS in both cohorts, but with the validation lines' donor structure modelled neither reaches FDR < 0.05 there (0.07, 0.12); CTNNB1 is significant in organoids (FDR = 0.004) |
+| **Power** | At 6 vs 6: a LIONESS edge needs a ~6 SD difference to be detected (~1 SD at 50 per group); GENIE3 detected 0 of 300 spiked edges up to r = 0.99; ALPACA missed a 2 SD shift across 3% of edges |
 | **Tissue generality** | Only FMR1 and FMR1-AS1 are significant in more than one tissue context (tissue restriction and limited power cannot be told apart at these cohort sizes) |
 | **Expression shapes PANDA** | With shuffled expression PANDA returns the same network every run (r = 0.998); real expression moves it away from the priors (r = 0.894) |
 
@@ -46,7 +47,7 @@ distinguishable from chance:
 |---|---|
 | GENIE3 edges (pooled null, 5 permutations at 1,000 trees; calibrated: 4.97% of held-out null edges at p < 0.05) | 0 of 8.26 M at FDR < 0.10 |
 | PANDA edges (randomized-prior null, all edges) | 0 at FDR; 5.17% above null q95, the fraction expected by chance |
-| ALPACA modules (FXS/control label permutation within timepoint, 100 relabelings) | global p = 0.81; best module family-wise p = 0.38 |
+| ALPACA modules (FXS/control label permutation within timepoint, all 399 relabelings, exact) | global p = 0.83; best module family-wise p = 0.37 |
 | LIONESS edges (limma, timepoint-adjusted) | 0 of 2.9 M at FDR < 0.05 |
 | LIONESS genome-wide shift | 52.4% of edges stronger in FXS, 95% CI [48.3, 53.4] |
 | Cross-cohort effect sizes | Pearson r = 0.031 (shrunken: 0.008); sign concordance 50.5% |
@@ -84,6 +85,7 @@ Rscript scripts/part3_steps17-19.R      # LIONESS bootstrap, centrality, ENCODE/
 Rscript scripts/17b-run.R               # PANDA null
 Rscript scripts/part4_steps20-22.R      # tissue generality, CollecTRI, headline numbers
 Rscript scripts/part5_robust_nulls.R    # calibrated GENIE3 null, PANDA nulls, ALPACA label permutation
+Rscript scripts/part6_review_checks.R   # power analysis, negative controls, donor-blocked TF activity
 ```
 
 Each part runs in a fresh R process, so memory is released between stages
@@ -130,6 +132,7 @@ per-module figures, XGMML, the style file and a `.cys` session to
 | 19 | part 3 | ChEA3 / ENCODE ChIP-seq self-recovery, TRRUST enrichment |
 | 20–22 | part 4 | Tissue-generality classification, CollecTRI enrichment and TF activity, headline table |
 | 23 | part 5 | GENIE3 null at matched trees with leave-one-out calibration; PANDA randomized-prior (all edges) and shuffled-expression nulls; ALPACA with control as reference, raw module differential modularity, within-timepoint label permutation with max-statistic family-wise p; module-local centrality |
+| 24 | part 6 | Donor-blocked TF activity; ChEA3/CollecTRI negative controls (random gene sets, shuffled GENIE3, motif prior only); LIONESS minimum detectable effect; GENIE3 and ALPACA spike-in power; completes all 399 ALPACA relabelings (`FXS_P6_WORKERS` forks; use 1–2 on 14 GB RAM) |
 
 ### Design choices worth knowing
 
@@ -160,7 +163,7 @@ per-module figures, XGMML, the style file and a `.cys` session to
 colab/      Colab notebook, R installer, package installer
 scripts/    00_config.R, 01_fetch_data.R, part1–part5, 17b-run.R, 14_cytoscape_local.R
 results/    summary tables (DE, methylation, GENIE3, PANDA, LIONESS, ALPACA, validation, tissue);
-            robust_nulls/ holds the part 5 tests
+            robust_nulls/ holds the part 5 tests, review_checks/ the part 6 checks
 figures/    all figures, by analysis
 networks/   ALPACA network: XGMML, GraphML, Cytoscape style and session
 logs/       full run logs, sessionInfo per stage, package versions
