@@ -14,7 +14,8 @@
 #   3. In RStudio: setwd("~/fxs-research") (v5 results are committed there),
 #      or to the unzipped results folder, then source this file.
 #
-# Nodes in FDR-significant ALPACA modules get a thick gold border.
+# Nodes in ALPACA modules significant under the label-permutation
+# test (part 5, family-wise p < 0.05) get a thick gold border.
 # ============================================================
 
 library(RCy3)
@@ -25,8 +26,14 @@ setwd(ROOT)
 dir.create("networks", showWarnings = FALSE)
 dir.create(file.path("figures", "ALPACA"), recursive = TRUE, showWarnings = FALSE)
 
-nodes_f <- file.path("results", "ALPACA", "FXS_ALPACA_nodes.csv")
-edges_f <- file.path("results", "ALPACA", "FXS_ALPACA_edges.csv")
+# v5.1: prefer the corrected ALPACA modules from part 5 (control as reference)
+nodes_f <- file.path("results", "robust_nulls", "ALPACA_corrected_cyto_nodes.csv")
+edges_f <- file.path("results", "robust_nulls", "ALPACA_corrected_cyto_edges.csv")
+if (!file.exists(nodes_f) || !file.exists(edges_f)) {
+  cat("Part 5 tables not found — using the v5 ALPACA tables.\n")
+  nodes_f <- file.path("results", "ALPACA", "FXS_ALPACA_nodes.csv")
+  edges_f <- file.path("results", "ALPACA", "FXS_ALPACA_edges.csv")
+}
 if (!file.exists(nodes_f) || !file.exists(edges_f))
   stop("Run part2 on Colab first and download results/ALPACA/FXS_ALPACA_{nodes,edges}.csv")
 
@@ -38,12 +45,13 @@ edge_all <- read.csv(edges_f, stringsAsFactors = FALSE) %>%
   mutate(interaction = "regulates")
 
 # The top modules hold ~300k edges — too many to lay out or read. Keep:
-#   * every edge inside the FDR-significant module(s) (module 4 in v5), and
+#   * every edge touching a module significant in the label-permutation
+#     test (family-wise p < 0.05; part 5), and
 #   * the strongest remaining edges, up to MAX_EDGES in total.
 MAX_EDGES <- as.numeric(Sys.getenv("FXS_CYTO_MAX_EDGES", 3000))
-sig_f <- file.path("results", "ALPACA", "ALPACA_module_significance.csv")
+sig_f <- file.path("results", "robust_nulls", "ALPACA_labelperm_modules.csv")
 sig_modules <- if (file.exists(sig_f)) {
-  m <- read.csv(sig_f); as.character(m$Module[m$module_FDR < 0.05])
+  m <- read.csv(sig_f); as.character(m$Module[m$p_global_maxQ < 0.05])
 } else character(0)
 sig_nodes <- node_table$id[node_table$Module %in% sig_modules]
 keep_sig  <- edge_all %>% filter(source %in% sig_nodes | target %in% sig_nodes)

@@ -429,8 +429,12 @@ cat("Step 11 done\n")
 # ============================================================
 
 cat("\nRunning ALPACA...\n")
+# v5.1 FIX: alpaca() treats the 3rd column of the merged table (panda.net1)
+# as the CONTROL network (communities are detected in it), so control goes
+# first. v5 passed FXS first. Note the module scores written by alpaca()
+# sum to 2 within every module; module significance is tested in part 5.
 alpaca_result <- netZooR::pandaToAlpaca(
-  panda.net1 = fxs_net, panda.net2 = control_net,
+  panda.net1 = control_net, panda.net2 = fxs_net,
   file.stem = file.path(RESULTS_ALPACA, "FXS_ALPACA"), verbose = TRUE)
 
 memb_file <- read.table(file.path(RESULTS_ALPACA, "FXS_ALPACA_ALPACA_final_memb.txt"), header = FALSE,

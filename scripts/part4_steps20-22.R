@@ -242,6 +242,11 @@ summary_tbl <- data.frame(
             getv(cc, "Pearson r"), getv(cc, "Pearson r (shrunken LFC)"),
             getv(cc, "RRHO peak -log10(p)"),
             paste(tissue_df$Gene[tissue_df$N_contexts >= 2], collapse = ", ")))
+# v5.1: the v5 ALPACA node/module tests are invalid (module scores sum to 2);
+# drop them and add the robust-null rows from part 5 when available.
+summary_tbl$Value <- as.character(summary_tbl$Value)
+summary_tbl <- summary_tbl[!summary_tbl$Item %in% c("ALPACA nodes pooled FDR<0.05", "Best ALPACA module FDR"), ]
+summary_tbl <- rbind(summary_tbl, robust_headline_rows())
 print(summary_tbl, row.names = FALSE)
 write.csv(summary_tbl, file.path("results", "v5_headline_numbers.csv"), row.names = FALSE)
 

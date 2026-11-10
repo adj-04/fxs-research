@@ -181,6 +181,13 @@ if (file.exists(ckpt("checkpoint_17B_only.RData"))) {
 # so weight permutation over fixed topology is used. A probe run
 # determines the actual output filename before the loop.
 
+# v5.1: DISABLED BY DEFAULT. This test compared module means of alpaca()
+# node scores with a pooled node null, but alpaca() normalises scores to sum
+# to 2 within each module, so a module's mean is 2/size and small modules
+# always look significant. Replaced by the label-permutation test in
+# scripts/part5_robust_nulls.R. Set FXS_RUN_OLD_ALPACA_NULL=TRUE only to
+# reproduce v5.
+if (env_bool("FXS_RUN_OLD_ALPACA_NULL", "FALSE")) {
 cat("\n--- 17C: ALPACA module significance (", N_PERM_ALPACA, "runs) ---\n")
 
 cat("Probe run to determine pandaToAlpaca output filename...\n")
@@ -188,7 +195,7 @@ probe_stem <- file.path(tempdir(), "tmp_alpaca_probe")
 probe_net  <- fxs_net
 probe_net$Score <- fxs_net$Score[sample(nrow(fxs_net))]
 probe <- tryCatch(
-  netZooR::pandaToAlpaca(panda.net1 = probe_net, panda.net2 = control_net,
+  netZooR::pandaToAlpaca(panda.net1 = control_net, panda.net2 = probe_net,
                          file.stem = probe_stem, verbose = FALSE),
   error = function(e) { cat("PROBE FAILED:", conditionMessage(e), "\n"); NULL })
 
@@ -222,7 +229,7 @@ if (!is.na(score_suffix)) {
     
     stem <- file.path(tempdir(), paste0("tmp_alpaca_null_", p))
     ar <- tryCatch(
-      netZooR::pandaToAlpaca(panda.net1 = fxs_null, panda.net2 = control_net,
+      netZooR::pandaToAlpaca(panda.net1 = control_net, panda.net2 = fxs_null,
                              file.stem = stem, verbose = FALSE),
       error = function(e) {
         n_failed <<- n_failed + 1
@@ -334,6 +341,7 @@ if (length(alpaca_null_scores) >= 5) {
 } else {
   cat("Too few successful null runs — do not report ALPACA significance.\n")
 }
+} else cat("\n--- 17C skipped: ALPACA module significance is tested in part5_robust_nulls.R ---\n")
 
 # ---- 17D: LIONESS BOOTSTRAP ----
 

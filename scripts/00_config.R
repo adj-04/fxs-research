@@ -131,6 +131,28 @@ null_hist_quantile <- function(h, q) {
   if (h$log) 10^b else b
 }
 
+# v5.1: headline rows from the robust nulls (scripts/part5_robust_nulls.R).
+# Used by part 4 (fresh runs) and part 5 (updates the existing table).
+robust_headline_rows <- function(dir = file.path("results", "robust_nulls")) {
+  rd <- function(f) { f <- file.path(dir, f); if (file.exists(f)) read.csv(f, stringsAsFactors = FALSE) else NULL }
+  gv <- function(df, m) if (is.null(df)) NULL else as.character(df$Value[match(m, df$Metric)])
+  g <- rd("GENIE3_matched_null_summary.csv"); p <- rd("PANDA_robust_null_summary.csv")
+  a <- rd("ALPACA_labelperm_summary.csv")
+  rows <- list(
+    c("GENIE3 edges FDR<0.05 (matched-tree null)", gv(g, "Observed edges FDR<0.05")),
+    c("GENIE3 null calibration: held-out fraction p<0.05", gv(g, "Calibration: null fraction p<0.05 (mean)")),
+    c("PANDA observed fraction above prior-null q95 (all edges)", gv(p, "Observed fraction above null q95")),
+    c("PANDA r(observed, shuffled expression)", gv(p, "Correlation observed vs shuffled-expression network (mean)")),
+    c("PANDA r(shuffled, shuffled)", gv(p, "Correlation between shuffled-expression networks (mean)")),
+    c("PANDA edges moved by real expression FDR<0.05", gv(p, "Edges moved by real expression, FDR<0.05")),
+    c("ALPACA relabelings", gv(a, "ALPACA relabelings (of 399)")),
+    c("ALPACA global differential modularity p", gv(a, "Global differential modularity p")),
+    c("Best ALPACA module family-wise p", gv(a, "Best module family-wise p (Q)")))
+  rows <- Filter(function(r) length(r) == 2 && !is.na(r[2]), rows)
+  if (!length(rows)) return(NULL)
+  data.frame(Item = vapply(rows, `[`, "", 1), Value = vapply(rows, `[`, "", 2))
+}
+
 log_session <- function(part) {
   writeLines(capture.output(sessionInfo()),
              file.path(LOG_DIR, paste0("sessionInfo_", part, ".txt")))
