@@ -144,7 +144,6 @@ robust_headline_rows <- function(dir = file.path("results", "robust_nulls")) {
     c("PANDA observed fraction above prior-null q95 (all edges)", gv(p, "Observed fraction above null q95")),
     c("PANDA r(observed, shuffled expression)", gv(p, "Correlation observed vs shuffled-expression network (mean)")),
     c("PANDA r(shuffled, shuffled)", gv(p, "Correlation between shuffled-expression networks (mean)")),
-    c("PANDA edges moved by real expression FDR<0.05", gv(p, "Edges moved by real expression, FDR<0.05")),
     c("ALPACA relabelings", gv(a, "ALPACA relabelings (of 399)")),
     c("ALPACA global differential modularity p", gv(a, "Global differential modularity p")),
     c("Best ALPACA module family-wise p", gv(a, "Best module family-wise p (Q)")))

@@ -6,7 +6,7 @@ networks, validated across two independent patient-derived cohorts.
 
 The pipeline combines RNA-seq differential expression, cell-composition-adjusted
 DNA methylation, and four network-inference methods (GENIE3, PANDA, LIONESS,
-ALPACA). It tests every network statistic against an FDR-capable permutation
+ALPACA). It tests every network statistic against a calibrated permutation
 null and validates candidate regulators against ENCODE ChIP-seq, TRRUST and
 CollecTRI. Everything runs from public data with one Colab notebook.
 
@@ -34,19 +34,19 @@ independent windows onto the same lesion.
 | | Result |
 |---|---|
 | **FMR1 silencing** | Replicates in all three datasets: log2FC −10.47 (organoids), −8.91 (validation lines), Δβ = 0.58 across 15 promoter probes (blood, cell-adjusted) |
-| **Significant differential module** | ALPACA module 4: TFs **BARHL1, OTX1** with targets **NEFL, MPZL2, TAF4B**. FDR = 0.0099; still significant with half the permutations (FDR = 0.03) |
 | **Best-validated regulator** | **REST**: rank 1 in ChEA3's ENCODE ChIP-seq library for both GENIE3 and PANDA targets; curated-target enrichment in TRRUST (FDR = 0.004) and CollecTRI (FDR = 5 × 10⁻⁶); top-30 GENIE3 hub |
 | **TF activity** | SP1 activity lower in FXS in both cohorts (validation FDR = 0.003); CTNNB1 is the only TF significant in both |
-| **Tissue generality** | Only FMR1 and FMR1-AS1 are significant in more than one tissue context |
-| **Local centrality** | SP1, TFAP2A, NRF1, REST and FOXG1 sit in the top decile of their own module without being genome-wide hubs |
+| **Tissue generality** | Only FMR1 and FMR1-AS1 are significant in more than one tissue context (tissue restriction and limited power cannot be told apart at these cohort sizes) |
+| **Expression shapes PANDA** | With shuffled expression PANDA returns the same network every run (r = 0.998); real expression moves it away from the priors (r = 0.894) |
 
-**Negative results, reported in full.** At n = 6 vs 6, no individual edge is
+**Negative results, reported in full.** At n = 6 vs 6, no edge or module is
 distinguishable from chance:
 
 | Test | Result |
 |---|---|
-| GENIE3 edges (pooled null, 20 permutations) | 0 of 8.26 M at FDR < 0.05 |
-| PANDA edges (randomized-prior null) | 0 at FDR; 5.2% above null q95, so scores are driven by the priors |
+| GENIE3 edges (pooled null, 5 permutations at 1,000 trees; calibrated: 4.97% of held-out null edges at p < 0.05) | 0 of 8.26 M at FDR < 0.10 |
+| PANDA edges (randomized-prior null, all edges) | 0 at FDR; 5.17% above null q95, the fraction expected by chance |
+| ALPACA modules (FXS/control label permutation within timepoint, 100 relabelings) | global p = 0.81; best module family-wise p = 0.38 |
 | LIONESS edges (limma, timepoint-adjusted) | 0 of 2.9 M at FDR < 0.05 |
 | LIONESS genome-wide shift | 52.4% of edges stronger in FXS, 95% CI [48.3, 53.4] |
 | Cross-cohort effect sizes | Pearson r = 0.031 (shrunken: 0.008); sign concordance 50.5% |
@@ -69,7 +69,9 @@ with the default **Python 3** runtime and run the cells top to bottom.
 - Writes data, results, figures, checkpoints and logs to Google Drive.
 - Permutation steps checkpoint after every iteration. After a disconnect, rerun
   the setup cells and the same stage; it resumes where it stopped.
-- Needs about 6 GB of Drive space. Total run time on the free tier is roughly 4–5 hours.
+- Needs about 6 GB of Drive space. Parts 1–4 take roughly 4–5 hours on the free tier.
+- Part 5 is much faster on a multi-core machine: about 1.5 h on an 8-core laptop
+  (`FXS_CORES=8`), versus several hours on Colab's 2 cores.
 
 ### Locally
 
@@ -78,9 +80,10 @@ export FXS_REPO=$PWD FXS_ROOT=$PWD      # FXS_ROOT = where outputs are written
 Rscript scripts/01_fetch_data.R         # download all inputs once (MD5 manifest)
 Rscript scripts/part1_steps1-8.R        # DE, methylation, GENIE3, PANDA
 Rscript scripts/part2_steps9-16.R       # networks, LIONESS, ALPACA, enrichment, validation cohort
-Rscript scripts/part3_steps17-19.R      # GENIE3/ALPACA nulls, centrality, ENCODE/TRRUST
+Rscript scripts/part3_steps17-19.R      # LIONESS bootstrap, centrality, ENCODE/TRRUST
 Rscript scripts/17b-run.R               # PANDA null
 Rscript scripts/part4_steps20-22.R      # tissue generality, CollecTRI, headline numbers
+Rscript scripts/part5_robust_nulls.R    # calibrated GENIE3 null, PANDA nulls, ALPACA label permutation
 ```
 
 Each part runs in a fresh R process, so memory is released between stages
@@ -99,8 +102,10 @@ setwd("~/fxs-research")
 source("scripts/14_cytoscape_local.R")
 ```
 
-This builds the styled ALPACA network via RCy3: the FDR-significant module in
-full (gold border) plus the strongest remaining edges. It exports PNG/PDF,
+This builds the styled ALPACA network via RCy3 from the Part 5 modules (control
+as reference): the strongest edges of the five largest-Q modules, with any
+module significant under label permutation drawn in full (gold border; none in
+the current results). It exports PNG/PDF,
 per-module figures, XGMML, the style file and a `.cys` session to
 `figures/ALPACA/` and `networks/`.
 
@@ -120,10 +125,11 @@ per-module figures, XGMML, the style file and a `.cys` session to
 | 11 | part 2 | LIONESS (12 networks), per-edge limma `~ timepoint + condition` |
 | 12–14 | part 2 | ALPACA modules, GO/KEGG enrichment, network export |
 | 15–16 | part 2 | Validation cohort DE with donor-blocked limma-voom; cross-cohort overlap, correlation, RRHO |
-| 17 | part 3, 17b | Pooled permutation nulls (GENIE3, PANDA, ALPACA); stratified LIONESS bootstrap |
-| 18 | part 3 | Centrality, target-universe coverage, module-local centrality |
+| 17 | part 3, 17b | GENIE3 null (superseded by part 5), PANDA randomized-prior null; stratified LIONESS bootstrap |
+| 18 | part 3 | Centrality, target-universe coverage |
 | 19 | part 3 | ChEA3 / ENCODE ChIP-seq self-recovery, TRRUST enrichment |
 | 20–22 | part 4 | Tissue-generality classification, CollecTRI enrichment and TF activity, headline table |
+| 23 | part 5 | GENIE3 null at matched trees with leave-one-out calibration; PANDA randomized-prior (all edges) and shuffled-expression nulls; ALPACA with control as reference, raw module differential modularity, within-timepoint label permutation with max-statistic family-wise p; module-local centrality |
 
 ### Design choices worth knowing
 
@@ -136,6 +142,12 @@ per-module figures, XGMML, the style file and a `.cys` session to
   permutations gives a smallest possible p of 1/(B+1), far too coarse for FDR
   over millions of edges. Every observed score is instead compared with the
   pooled null of all edges across all permutations (resolution about 10⁻⁸).
+  The null uses the same GENIE3 settings as the observed network, and its
+  calibration is checked on held-out null replicates.
+- **ALPACA modules are tested by label permutation.** ALPACA's node scores sum
+  to 2 within every module, so module means are 2/size and cannot be compared
+  with a pooled node null. Modules are scored by raw differential modularity and
+  compared with the best module from each FXS/control relabeling.
 - **Methylation is a prior, not matched multi-omics.** The blood cohort shares
   no subjects with the RNA-seq cohorts. Control-group promoter methylation
   enters the PANDA motif prior as a baseline-accessibility weight.
@@ -146,8 +158,9 @@ per-module figures, XGMML, the style file and a `.cys` session to
 
 ```
 colab/      Colab notebook, R installer, package installer
-scripts/    00_config.R, 01_fetch_data.R, part1–part4, 17b-run.R, 14_cytoscape_local.R
-results/    summary tables (DE, methylation, GENIE3, PANDA, LIONESS, ALPACA, validation, tissue)
+scripts/    00_config.R, 01_fetch_data.R, part1–part5, 17b-run.R, 14_cytoscape_local.R
+results/    summary tables (DE, methylation, GENIE3, PANDA, LIONESS, ALPACA, validation, tissue);
+            robust_nulls/ holds the part 5 tests
 figures/    all figures, by analysis
 networks/   ALPACA network: XGMML, GraphML, Cytoscape style and session
 logs/       full run logs, sessionInfo per stage, package versions

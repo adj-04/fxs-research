@@ -559,7 +559,8 @@ if ("summary" %in% STAGES) {
   if (file.exists(hf)) {
     h <- read.csv(hf, stringsAsFactors = FALSE); h$Value <- as.character(h$Value)
     new_rows <- robust_headline_rows()
-    h <- h[!h$Item %in% c("ALPACA nodes pooled FDR<0.05", "Best ALPACA module FDR", new_rows$Item), ]
+    h <- h[!h$Item %in% c("ALPACA nodes pooled FDR<0.05", "Best ALPACA module FDR",
+                          "PANDA edges moved by real expression FDR<0.05", new_rows$Item), ]
     h <- rbind(h, new_rows)
     write.csv(h, hf, row.names = FALSE)
     cat("\nHeadline table updated:\n"); print(h, row.names = FALSE)
